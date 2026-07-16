@@ -26,7 +26,7 @@ This is a reduced research model, not a design-certification CFD or safety code.
 - Oxidizer velocity is computed from its standard flow and the physical annulus between the H2 tube and oxidizer shroud.
 - Return velocity is independently computed from the sum of the two actual inlet volume flows divided by the return-annulus area. No local nozzle velocity is reused as a bulk exhaust velocity.
 - The lower return boundary is an outflow. Design controls rebuild from `t=0`; operating flow controls change the running transient.
-- The run-mode selector exposes two distinct combustion branches. **Stabilized reference** initializes near the burning branch and supplies a Gaussian radical-equivalent activity only in a roughly 2.8 mm axial zone around the H2-nozzle lip; heat is still released only where transported fuel and oxidizer overlap. **Ignition / blowoff transient** removes that activity and uses one finite ignition seed.
+- The run-mode selector exposes two distinct combustion branches. **Stabilized reference** initializes near the burning branch and supplies a Gaussian radical-equivalent activity only in a roughly 2.8 mm axial zone around the H2-nozzle lip. Its radial support is resolved over more than one GPU cell so it cannot disappear between cell centers; heat is still released only where transported fuel and oxidizer overlap. **Ignition / blowoff transient** removes that activity and uses one finite ignition seed.
 
 Reference: [Lightcell patent US12136898B2](https://patents.google.com/patent/US12136898B2/en).
 
@@ -39,6 +39,7 @@ Reference: [Lightcell patent US12136898B2](https://patents.google.com/patent/US1
 - The energy audit includes optical loss, radial environmental loss, sensible exhaust heat, and stored thermal-plus-excitation energy.
 - The open-air flame length is only a comparator and is not imposed on the confined flame.
 - A generated Cantera table supplies the operating HP-equilibrium state, the local stoichiometric adiabatic ceiling, O/H/OH radical comparators, and a premixed multicomponent/Soret flame-speed scale. Only the thermochemical ceiling constrains the reduced solve; the premixed speed is displayed, not imposed.
+- A CPU mirror of the local GPU source term verifies that the default stabilized holder cell crosses the 1120 K self-sustaining activation threshold by consuming fuel and stoichiometric oxidizer. With the holder disabled at the same cold state, reaction and heat release remain exactly zero.
 
 Reference: [Molkov and Saffers, hydrogen jet-flame correlation](https://publications.iafss.org/publications/fss/10/933).
 

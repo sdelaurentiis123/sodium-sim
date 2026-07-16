@@ -671,16 +671,85 @@ export function burnerLipFlameHolderActivity({
   axialPositionM,
   fuelNozzleDiameterM,
   nozzleInsertionM,
+  radialCellSizeM = 0.038 / 64,
+  axialCellSizeM = 0.105 / 112,
   enabled = true,
 }) {
   if (!enabled) return 0;
   const lipRadiusM = fuelNozzleDiameterM / 2;
-  const radialWidthM = Math.max(0.00055, 0.18 * fuelNozzleDiameterM);
+  // A sub-grid holder can disappear between cell centers. Resolve its radical
+  // support over at least ~1.25 radial cells without adding heat directly.
+  const radialWidthM = Math.max(
+    0.00055,
+    0.18 * fuelNozzleDiameterM,
+    1.25 * radialCellSizeM,
+  );
+  const axialWidthM = Math.max(0.0028, 2.5 * axialCellSizeM);
   const radial = Math.exp(-(((radiusM - lipRadiusM) / radialWidthM) ** 2));
   const axial = Math.exp(
-    -(((axialPositionM - (nozzleInsertionM + 0.0018)) / 0.0028) ** 2),
+    -(((axialPositionM - (nozzleInsertionM + 0.0018)) / axialWidthM) ** 2),
   );
   return radial * axial;
+}
+
+// CPU mirror of the WGSL local combustion source. It deliberately excludes
+// advection and conduction: this is the unit acceptance test for whether a
+// mesh-resolved holder cell consumes real reactants and crosses the thermal
+// ignition threshold without an imposed temperature or hidden heater.
+export function reducedBurnerCellStep({
+  temperatureK,
+  fuelFraction,
+  stoichiometricOxidizerFraction,
+  pressurePa,
+  radiusM,
+  axialPositionM,
+  fuelNozzleDiameterM,
+  nozzleInsertionM,
+  stabilized = true,
+  timeStepS = 2e-5,
+  chemistryRateS = 4e4,
+  atomicPumpFraction = 0.01,
+  thermochemistryCeilingK = 2850,
+}) {
+  const smoothstep = (low, high, value) => {
+    const x = Math.max(0, Math.min(1, (value - low) / (high - low)));
+    return x * x * (3 - 2 * x);
+  };
+  const holder = burnerLipFlameHolderActivity({
+    radiusM,
+    axialPositionM,
+    fuelNozzleDiameterM,
+    nozzleInsertionM,
+    enabled: stabilized,
+  });
+  const activation = Math.max(
+    smoothstep(760, 1120, temperatureK),
+    0.92 * holder,
+  );
+  const available = Math.min(
+    Math.max(0, fuelFraction),
+    Math.max(0, stoichiometricOxidizerFraction),
+  );
+  const reactionRateS = activation * available * chemistryRateS;
+  const reactedFraction = Math.min(available, timeStepS * reactionRateS);
+  const molarDensityM3 = pressurePa / (8.314462618 * Math.max(temperatureK, 300));
+  const chemicalPowerDensityWM3 = molarDensityM3 * (reactedFraction / timeStepS) * 241800;
+  const heatCapacityDensityJKM3 = pressurePa / (287 * Math.max(temperatureK, 300)) * 2400;
+  const netThermalPowerDensityWM3 = (1 - atomicPumpFraction) * chemicalPowerDensityWM3;
+  const nextTemperatureK = Math.min(
+    thermochemistryCeilingK,
+    temperatureK + timeStepS * netThermalPowerDensityWM3 / heatCapacityDensityJKM3,
+  );
+  return {
+    holder,
+    activation,
+    reactionRateS,
+    reactedFraction,
+    chemicalPowerDensityWM3,
+    nextTemperatureK,
+    fuelFraction: Math.max(0, fuelFraction - reactedFraction),
+    stoichiometricOxidizerFraction: Math.max(0, stoichiometricOxidizerFraction - reactedFraction),
+  };
 }
 
 export function sapphireThermalAssessment({

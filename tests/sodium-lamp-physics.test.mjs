@@ -29,6 +29,7 @@ import {
   coaxialShearRateProxy,
   sapphireThermalAssessment,
   burnerLipFlameHolderActivity,
+  reducedBurnerCellStep,
 } from '../sodium-lamp/physics.js';
 
 test('metered hydrogen flow produces conservative nozzle and LHV diagnostics', () => {
@@ -226,9 +227,34 @@ test('coaxial shear and sapphire screening expose physical scales without claimi
 test('stabilized flame holder is localized at the burner lip and disappears in transient mode', () => {
   const common={fuelNozzleDiameterM:.004,nozzleInsertionM:.006};
   const lip=burnerLipFlameHolderActivity({...common,radiusM:.002,axialPositionM:.0078});
+  const adjacentCell=burnerLipFlameHolderActivity({...common,radiusM:.0026,axialPositionM:.0078});
   const far=burnerLipFlameHolderActivity({...common,radiusM:.012,axialPositionM:.04});
   const disabled=burnerLipFlameHolderActivity({...common,radiusM:.002,axialPositionM:.0078,enabled:false});
   assert.ok(lip > .99);
+  assert.ok(adjacentCell > .45, 'holder support must span more than one radial GPU cell');
   assert.ok(far < 1e-20);
   assert.equal(disabled,0);
+});
+
+test('stabilized burner cell crosses ignition using consumed reactants, not imposed heat', () => {
+  const geometry={radiusM:.00208,axialPositionM:.00703,fuelNozzleDiameterM:.004,nozzleInsertionM:.006};
+  const initial={temperatureK:520,fuelFraction:.38,stoichiometricOxidizerFraction:.55,pressurePa:1.4e5,...geometry};
+  const unheld=reducedBurnerCellStep({...initial,stabilized:false});
+  assert.equal(unheld.reactedFraction,0);
+  assert.equal(unheld.chemicalPowerDensityWM3,0);
+  assert.equal(unheld.nextTemperatureK,initial.temperatureK);
+
+  const first=reducedBurnerCellStep({...initial,stabilized:true});
+  const second=reducedBurnerCellStep({
+    ...initial,
+    temperatureK:first.nextTemperatureK,
+    fuelFraction:first.fuelFraction,
+    stoichiometricOxidizerFraction:first.stoichiometricOxidizerFraction,
+    stabilized:true,
+  });
+  assert.ok(first.reactedFraction > 0);
+  assert.ok(first.chemicalPowerDensityWM3 > 0);
+  assert.ok(second.nextTemperatureK > 1120, 'resolved holder cell must reach self-sustaining thermal activation');
+  assert.ok(second.fuelFraction < initial.fuelFraction);
+  assert.ok(second.stoichiometricOxidizerFraction < initial.stoichiometricOxidizerFraction);
 });

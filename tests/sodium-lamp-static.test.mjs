@@ -28,6 +28,7 @@ test('GPU source contains explicit D1/D2 non-LTE kinetics and no LTE closure', a
   assert.match(compute, /let b=p\[2\]-p\[5\]/);
   assert.match(compute, /fn harmonicK\(/);
   assert.match(compute, /fn flameHolder\(/);
+  assert.match(compute, /1\.25\*p\[2\]\/p\[0\]/);
   assert.match(compute, /activation=max\(thermal,.92\*flameHolder\(r,z\)\)/);
   assert.match(compute, /fn groupWeight\(/);
   assert.match(compute, /fn qrate\(/);
@@ -62,6 +63,7 @@ test('reactor builder separates restart controls from live operating controls', 
   assert.match(html, /id="reference-exitance"/);
   assert.match(html, /id="spectrum-reversal"/);
   assert.match(html, /id="simulation-mode"/);
+  assert.match(html, /id="peak-gas-temperature"/);
   assert.match(html, /Stabilized reference/);
   assert.match(html, /Ignition \/ blowoff transient/);
   assert.match(html, /resolved Voigt transfer/);
@@ -95,4 +97,6 @@ test('reactor builder separates restart controls from live operating controls', 
   assert.match(js, /input\.addEventListener\('change'/);
   assert.match(js, /params\[P\.TIME\]=0/);
   assert.match(js, /physicalTimeS:params\[P\.TIME\]/);
+  assert.match(js, /branchLost=stabilized/);
+  assert.match(js, /bestFallback>=0\?fallbackCell:hottestGasCell/);
 });
