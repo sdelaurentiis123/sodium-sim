@@ -1,0 +1,248 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <title>Sodium Lamp — non-LTE radiation lab</title>
+  <meta name="description" content="A WebGPU reduced-order sodium combustion and non-LTE resonance-radiation simulator.">
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+  <header class="topbar">
+    <div>
+      <p class="eyebrow">LIGHTCELL / REDUCED RESEARCH MODEL</p>
+      <h1>Sodium Lamp</h1>
+    </div>
+    <div class="status-wrap">
+      <span id="gpu-status" class="status">initializing WebGPU</span>
+      <button id="pause" type="button">Pause</button>
+      <button id="reset" type="button">Start / rerun from t=0</button>
+    </div>
+  </header>
+
+  <main>
+    <section class="mode-bar" aria-label="Combustion solution mode">
+      <div>
+        <span>COMBUSTION BRANCH</span>
+        <strong id="mode-badge">STABILIZED REFERENCE</strong>
+      </div>
+      <p id="mode-explanation">Starts on the burning branch and applies a localized radical-equivalent flame holder at the nozzle lip. Fuel, oxidizer, heat release, sodium excitation and radiation still evolve on the GPU.</p>
+      <label for="simulation-mode">
+        <span>Run mode</span>
+        <select id="simulation-mode">
+          <option value="stable" selected>Stabilized reference</option>
+          <option value="transient">Ignition / blowoff transient</option>
+        </select>
+      </label>
+    </section>
+
+    <section class="process-strip" aria-label="Physical process represented by the simulator">
+      <div><b>1</b><span><strong>Combust</strong>H₂ + O₂ release heat in the inner tube</span></div><i>→</i>
+      <div><b>2</b><span><strong>Excite Na</strong>Neutral sodium reaches 3p by chemistry + absorbed light</span></div><i>→</i>
+      <div><b>3</b><span><strong>Trap 589 nm</strong>Photons are repeatedly absorbed and re-emitted</span></div><i>→</i>
+      <div><b>4</b><span><strong>Convert</strong>Narrowband light exits toward matched PV cells</span></div>
+    </section>
+    <section class="visuals" aria-label="Synchronized simulation views">
+      <article class="viewport viewport-3d">
+        <div class="view-label"><span>3D cutaway · missing wedge exposes interior</span><select id="volume-field" aria-label="3D volume field"><option value="2" selected>Trapped 589 nm radiation</option><option value="3">H₂/O₂ reaction sheet</option><option value="0">Local Na 589 nm emissivity</option><option value="1">Gas temperature</option></select></div>
+        <canvas id="volume" aria-label="Ray-marched 3D cutaway of the sodium combustor"></canvas>
+        <div class="construction-key" aria-label="Reactor construction layers">
+          <span><i class="core"></i>reacting core</span>
+          <span><i class="nozzle"></i>coaxial burner · lip = inlet plane</span>
+          <span><i class="tube"></i>solved inner + outer sapphire</span>
+          <span><i class="annulus"></i>counterflow return annulus</span>
+          <span><i class="optical"></i>PV / optical boundary</span>
+        </div>
+        <div class="drag-hint">drag to orbit · <output id="sim-time">0.000 s physical time</output></div>
+        <p id="volume-definition" class="volume-definition">The yellow volume is transported sodium D-line radiation surrounding the narrow reaction core.</p>
+        <div id="volume-scale" class="volume-scale photon"><span>10⁻⁹</span><i></i><span>10¹ / mode</span></div>
+      </article>
+      <article class="nonlte-instrument" aria-label="Non-LTE sodium atomic-state instrument">
+        <div class="instrument-head">
+          <span>BRIGHTEST CELL IN b₃ₚ = 10²–10⁵ REGIME</span>
+          <strong>RATE-SOLVED NON-LTE</strong>
+        </div>
+
+        <div class="departure-readout">
+          <div>
+            <span>departure coefficient · b₃ₚ</span>
+            <output id="departure-big">—</output>
+            <small>solved population ÷ disconnected Boltzmann check</small>
+          </div>
+          <dl>
+            <div><dt>gas T</dt><dd id="gas-temperature">—</dd></div>
+            <div><dt>excitation T</dt><dd id="excitation-temperature">—</dd></div>
+            <div><dt>D2 optical depth</dt><dd id="optical-depth">—</dd></div>
+          </dl>
+        </div>
+
+        <div class="wall-safety" aria-label="Sapphire thermal margin">
+          <div><span>peak sapphire</span><strong id="wall-temperature">—</strong></div>
+          <div><span>outer sapphire skin</span><strong id="wall-skin-temperature">—</strong></div>
+          <div><span>max through-wall ΔT</span><strong id="wall-melt-margin">—</strong></div>
+          <output id="wall-status">SOLVING WALL</output>
+          <p id="wall-detail">inner-wall heat flux and hotspot solving</p>
+        </div>
+
+        <div class="flame-diagnostics" aria-label="Resolved flame confinement diagnostics">
+          <div><span>resolved flame length</span><strong id="flame-length">—</strong></div>
+          <div><span>radial wall clearance</span><strong id="flame-wall-clearance">—</strong></div>
+          <div><span>axial exit clearance</span><strong id="flame-exit-clearance">—</strong></div>
+          <output id="flame-status">SOLVING FLAME</output>
+          <p id="flame-regime">Nozzle and reaction regime pending…</p>
+        </div>
+
+        <div class="reference-strip" aria-label="External physics reference checks">
+          <div><span>Cantera stoich T<sub>ad</sub></span><strong id="reference-tad">—</strong></div>
+          <div><span>peak gas / T<sub>ad</sub></span><strong id="reference-temperature-ratio">—</strong></div>
+          <div><span>D-line wall exitance</span><strong id="reference-exitance">—</strong></div>
+          <div><span>public peak comparator</span><strong>6.7 kW m⁻²</strong></div>
+          <p id="reference-status">Cantera and public-observable checks pending…</p>
+        </div>
+
+        <div class="atomic-and-population">
+          <div class="rate-flow" role="img" aria-label="Live non-LTE rate ledger with population gains, solved sodium states, and population losses">
+            <div class="flow-column gains">
+              <h3>population gains</h3>
+              <div><span>chemical pump</span><output id="flow-pump-value">—</output><i><b id="flow-pump"></b></i></div>
+              <div><span>D-line absorption</span><output id="flow-abs-value">—</output><i><b id="flow-abs"></b></i></div>
+            </div>
+            <div class="state-column">
+              <h3>solved states</h3>
+              <div><span>3p ²P°₃/₂ · D2</span><output id="d2-pop">—</output></div>
+              <div><span>3p ²P°₁/₂ · D1</span><output id="d1-pop">—</output></div>
+              <div class="ground"><span>3s ²S₁/₂</span><output id="ground-pop">—</output></div>
+            </div>
+            <div class="flow-column losses">
+              <h3>population losses</h3>
+              <div><span>emission</span><output id="flow-emit-value">—</output><i><b id="flow-emit"></b></i></div>
+              <div><span>collisional quench</span><output id="flow-quench-value">—</output><i><b id="flow-quench"></b></i></div>
+            </div>
+          </div>
+
+          <div class="population-plot" role="img" aria-label="Logarithmic comparison of solved non-LTE and Boltzmann diagnostic excited-state fractions">
+            <div class="plot-head"><span>3p population fraction · log scale</span><span>10⁻¹² → 1</span></div>
+            <div class="pop-row solved"><span>solved non-LTE</span><i><b id="solved-bar"></b></i><output id="solved-population">—</output></div>
+            <div class="pop-row reference"><span>Boltzmann check</span><i><b id="lte-bar"></b></i><output id="lte-population">—</output></div>
+            <p>Boltzmann is not fed back into the simulation.</p>
+          </div>
+        </div>
+
+        <div class="recycling-strip" aria-label="Photon recycling estimates">
+          <div><span>absorptions / accepted pump</span><strong id="reabsorptions">—</strong></div>
+          <div><span>direct boundary escape / pump</span><strong id="escape-probability">—</strong></div>
+          <div><span>atom + photon residence</span><strong id="residence-time">—</strong></div>
+        </div>
+
+        <div class="spectrum-wrap">
+          <div class="plot-head"><span>589 nm spectrum at optical boundary</span><span>resolved Voigt transfer · hot core → cooler Na shell</span></div>
+          <canvas id="spectrum-plot" width="720" height="260" aria-label="Emergent sodium D2 and D1 spectrum compared with the spontaneous source before radiation trapping"></canvas>
+          <div class="spectrum-key" aria-label="Spectrum line key"><span><i class="transported"></i>transported to boundary · scaled to GPU power</span><span><i class="produced"></i>optically thin spontaneous source</span></div>
+          <div class="spectrum-summary">
+            <div><span>escaped D2</span><strong id="spectrum-d2">—</strong></div>
+            <div><span>escaped D1</span><strong id="spectrum-d1">—</strong></div>
+            <div><span>escaped / produced</span><strong id="spectrum-yield">—</strong></div>
+            <div><span>D2 self-reversal</span><strong id="spectrum-reversal">—</strong></div>
+          </div>
+        </div>
+      </article>
+    </section>
+
+    <section class="workbench">
+      <div class="controls" aria-label="Model controls">
+        <div class="section-head">
+          <div><h2>Build your reactor</h2><span id="control-status">design converged</span></div>
+          <select id="preset" aria-label="Operating preset">
+            <option value="nacl">H₂ / O₂-enriched air + NaCl</option>
+            <option value="nai">H₂ / O₂ + NaI exploratory</option>
+            <option value="hps">High-pressure sodium reference</option>
+          </select>
+        </div>
+        <h3 class="control-group-title">Design · rebuilds the state</h3>
+        <label>Core radius <output id="core-radius-out">20 mm</output><input id="core-radius" data-control-kind="design" type="range" min="14" max="28" step="1" value="20"></label>
+        <label>Sapphire walls <output id="wall-thickness-out">3 mm</output><input id="wall-thickness" data-control-kind="design" type="range" min="2" max="6" step="0.5" value="3"></label>
+        <label>H₂ nozzle ID <output id="nozzle-diameter-out">4.0 mm</output><input id="nozzle-diameter" data-control-kind="design" type="range" min="2" max="10" step="0.5" value="4"></label>
+        <label>Oxidizer shroud OD <output id="oxidizer-nozzle-out">8.0 mm</output><input id="oxidizer-nozzle" data-control-kind="design" type="range" min="5" max="18" step="0.5" value="8"></label>
+        <label>Nozzle insertion <output id="nozzle-insertion-out">6 mm</output><input id="nozzle-insertion" data-control-kind="design" type="range" min="0" max="28" step="1" value="6"></label>
+        <label>Total pressure <output id="pressure-out">1.4 bar</output><input id="pressure" data-control-kind="design" type="range" min="0.5" max="8" step="0.1" value="1.4"></label>
+        <label>Total sodium inventory <output id="sodium-out">80 ppm</output><input id="sodium" data-control-kind="design" type="range" min="2" max="400" step="2" value="80"></label>
+        <label>D-line recycle reflectance <output id="reflect-out">8%</output><input id="reflect" data-control-kind="design" type="range" min="0" max="45" step="1" value="8"></label>
+        <label>PV D-line absorptance <output id="pv-absorb-out">84%</output><input id="pv-absorb" data-control-kind="design" type="range" min="35" max="95" step="1" value="84"></label>
+        <h3 class="control-group-title">Operation · evolves continuously</h3>
+        <label>H₂ standard flow <output id="fuel-flow-out">56 SLPM</output><input id="fuel-flow" type="range" min="10" max="135" step="1" value="56"></label>
+        <label>Oxidizer standard flow <output id="oxidizer-flow-out">74 SLPM</output><input id="oxidizer-flow" type="range" min="20" max="220" step="2" value="74"></label>
+        <label>Oxygen in oxidizer <output id="oxygen-out">38%</output><input id="oxygen" type="range" min="21" max="100" step="1" value="38"></label>
+        <div class="derived-operation" aria-label="Operating quantities derived from metered flows">
+          <div><span>fuel LHV input</span><strong id="derived-power">—</strong></div>
+          <div><span>equivalence ratio ϕ</span><strong id="derived-phi">—</strong></div>
+          <div><span>H₂ nozzle velocity</span><strong id="derived-speed">—</strong></div>
+          <div><span>oxidizer coflow</span><strong id="derived-coflow">—</strong></div>
+          <div><span>return-annulus bulk</span><strong id="derived-return">—</strong></div>
+          <div><span>open-air flame reference</span><strong id="derived-free-flame">—</strong></div>
+          <div><span>Cantera stoich T<sub>ad</sub></span><strong id="derived-tad">—</strong></div>
+          <div><span>Cantera premixed S<sub>L</sub></span><strong id="derived-flame-speed">—</strong></div>
+          <div><span>coaxial shear-rate proxy</span><strong id="derived-shear">—</strong></div>
+        </div>
+        <p class="run-protocol">Choose the stabilized branch for a persistent burner-lip flame, or the ignition transient to test whether the one-time seed survives. Set physical inputs, then press <strong>Start / rerun from t=0</strong> for a comparable run. <output id="run-number">run —</output></p>
+      </div>
+
+      <div class="audit">
+        <div class="section-head"><h2>Probe rate audit</h2><span id="probe-label">r 11 mm · z 50 mm</span></div>
+        <div class="rate-equation" aria-label="Upper state rate equation">
+          <span class="gain">chemical pump</span><b>+</b><span class="gain">absorption</span><b>−</b><span class="loss">spontaneous</span><b>−</b><span class="loss">stimulated</span><b>−</b><span class="loss">quench</span>
+        </div>
+        <dl class="rates">
+          <div><dt>Pump into 3p</dt><dd id="r-pump">—</dd></div>
+          <div><dt>3s → 3p absorption</dt><dd id="r-abs">—</dd></div>
+          <div><dt>3p → 3s spontaneous</dt><dd id="r-sp">—</dd></div>
+          <div><dt>Stimulated emission</dt><dd id="r-stim">—</dd></div>
+          <div><dt>Collisional quench</dt><dd id="r-q">—</dd></div>
+        </dl>
+        <div class="comparison">
+          <div><span>solved 3p fraction</span><strong id="upper-solved">—</strong></div>
+          <div><span>disconnected Boltzmann check</span><strong id="upper-lte">—</strong></div>
+          <div><span>non-LTE enhancement</span><strong id="enhancement">—</strong></div>
+        </div>
+        <p id="balance" class="balance">Waiting for GPU state…</p>
+
+        <div class="energy-ledger" aria-label="Directly integrated reactor energy ledger">
+          <h3>energy ledger · directly integrated</h3>
+          <dl>
+            <div><dt>metered fuel LHV</dt><dd id="fuel-input-power">—</dd></div>
+            <div><dt>combustion source</dt><dd id="combustion-power">—</dd></div>
+            <div><dt>resolved fuel conversion</dt><dd id="fuel-conversion">—</dd></div>
+            <div><dt>unconverted fuel proxy</dt><dd id="unburned-power">—</dd></div>
+            <div><dt>accepted Na pump</dt><dd id="atomic-pump-power">—</dd></div>
+            <div><dt>D-line incident at boundary</dt><dd id="boundary-line-power">—</dd></div>
+            <div><dt>D-line power to PV</dt><dd id="pv-line-power">—</dd></div>
+            <div><dt>collisional return to heat</dt><dd id="quench-heat">—</dd></div>
+            <div><dt>parasitic optical absorption</dt><dd id="parasitic-light">—</dd></div>
+            <div><dt>outer thermal loss</dt><dd id="boundary-heat">—</dd></div>
+            <div><dt>exhaust sensible heat</dt><dd id="exhaust-sensible">—</dd></div>
+            <div><dt>stored-energy rate</dt><dd id="storage-rate">—</dd></div>
+            <div class="residual"><dt>closure residual</dt><dd id="energy-residual">—</dd></div>
+          </dl>
+        </div>
+      </div>
+
+      <details class="assumptions">
+        <summary>Model boundary: what is solved vs. assumed</summary>
+        <div class="assumption-grid">
+          <div><h3>Solved on GPU</h3><p>Physical-time axisymmetric transport of coaxial H₂ and oxidizer jets, differential species diffusion, finite-rate heat release bounded by a Cantera thermochemical ceiling, inner/outer sapphire conduction, conserved sodium, D1/D2 statistical equilibrium, and six photon groups.</p></div>
+          <div><h3>No LTE closure</h3><p>Populations come from chemical pumping, radiation, species-resolved collisions and D1↔D2 mixing. Detailed balance lets LTE emerge only in the thermal limit. The Boltzmann population remains a detached diagnostic.</p></div>
+          <div><h3>Inputs needing experiment</h3><p>NaCl/NaOH neutralization, the fixed 1% chemical excitation yield, non-H₂ quench coefficients, species-dependent pressure broadening, frequency redistribution and measured optical boundary spectra remain uncertainty-bearing inputs—not operator knobs.</p></div>
+          <div><h3>Controlled approximations</h3><p>Prescribed axisymmetric coaxial-jet/turn/return velocity field, a face-aligned burner inlet, one-step H₂/O₂ heat release, mixture-averaged scalar diffusion, three groups per D line and P1 transport with a partial-current optical boundary. Stabilized mode replaces unresolved burner-lip radicals and boundary-layer recirculation with a localized flame-holder activity; transient mode removes it. Cantera HP equilibrium, premixed flame speed, resolved Voigt spectra, and sapphire stress are comparison diagnostics—not replacement closures.</p></div>
+        </div>
+      </details>
+    </section>
+  </main>
+
+  <footer>
+    <p>Reduced model geometry follows the public concentric-cylinder combustor and annular return-flow concept. Physics constants are embedded and inspectable; no server or model API is involved.</p>
+    <nav><a href="https://lightcellenergy.com/" rel="noreferrer">Lightcell</a><a href="https://patents.google.com/patent/US12136898B2/en" rel="noreferrer">Public geometry</a><a href="https://physics.nist.gov/PhysRefData/ASD/lines_form.html" rel="noreferrer">NIST atomic data</a></nav>
+  </footer>
+  <div id="fatal" hidden></div>
+  <script type="module" src="./app.js"></script>
+</body>
+</html>

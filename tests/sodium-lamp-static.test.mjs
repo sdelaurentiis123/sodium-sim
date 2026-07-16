@@ -1,0 +1,98 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { readFile } from 'node:fs/promises';
+
+const root = new URL('../sodium-lamp/', import.meta.url);
+
+test('sodium lamp is a base-path-safe static application', async () => {
+  const html = await readFile(new URL('index.html', root), 'utf8');
+  assert.match(html, /src="\.\/app\.js"/);
+  assert.match(html, /href="\.\/styles\.css"/);
+  assert.doesNotMatch(html, /(?:src|href)="\//);
+  assert.match(html, /Model boundary: what is solved vs\. assumed/);
+  assert.match(html, /RATE-SOLVED NON-LTE/);
+  assert.match(html, /Boltzmann is not fed back into the simulation/);
+});
+
+test('GPU source contains explicit D1/D2 non-LTE kinetics and no LTE closure', async () => {
+  const js = await readFile(new URL('app.js', root), 'utf8');
+  const compute = js.match(/const WGSL = \/\* wgsl \*\/`([\s\S]*?)`;/)?.[1];
+  assert.ok(compute);
+  assert.match(compute, /ratio1=\(pump\/3\.\+th1\+G1\*A1\*occ1\)/);
+  assert.match(compute, /ratio2=\(2\.\*pump\/3\.\+th2\+G2\*A2\*occ2\)/);
+  assert.match(compute, /let sink=max/);
+  assert.match(compute, /fn erfcx\(/);
+  assert.match(compute, /let aw=.*r-\.5\*dr/);
+  assert.match(compute, /fn material\(/);
+  assert.match(compute, /let outerWall=r>=p\[2\]-p\[5\]/);
+  assert.match(compute, /let b=p\[2\]-p\[5\]/);
+  assert.match(compute, /fn harmonicK\(/);
+  assert.match(compute, /fn flameHolder\(/);
+  assert.match(compute, /activation=max\(thermal,.92\*flameHolder\(r,z\)\)/);
+  assert.match(compute, /fn groupWeight\(/);
+  assert.match(compute, /fn qrate\(/);
+  assert.match(compute, /boundaryLeak\+=leakageSpeed/);
+  assert.doesNotMatch(compute, /east=here\*p\[10\]/);
+  assert.doesNotMatch(compute, /T=max\(T,1250\.\)/);
+  assert.match(compute, /fineRatio=2\.\*exp/);
+  assert.match(compute, /T=clamp\(T,p\[18\],p\[26\]\)/);
+  assert.doesNotMatch(compute, /clamp\(T,p\[18\],3200\.\)/);
+  assert.doesNotMatch(compute, /Boltzmann|\blte\s*\(/i);
+  assert.match(js, /createComputePipelineAsync/);
+  assert.match(js, /getCompilationInfo/);
+  assert.match(js, /drawSpectrum/);
+  assert.match(js, /resolvedSodiumSpectrum/);
+  assert.match(js, /canteraOperatingReference/);
+  assert.match(js, /sapphireThermalAssessment/);
+  assert.match(js, /escapeByGroup/);
+  assert.match(js, /maxTextureDimension2D/);
+});
+
+test('reactor builder separates restart controls from live operating controls', async () => {
+  const html = await readFile(new URL('index.html', root), 'utf8');
+  const js = await readFile(new URL('app.js', root), 'utf8');
+  for (const id of ['core-radius','wall-thickness','nozzle-diameter','oxidizer-nozzle','nozzle-insertion','pressure','sodium','reflect','pv-absorb'])
+    assert.match(html, new RegExp(`id="${id}"[^>]*data-control-kind="design"|data-control-kind="design"[^>]*id="${id}"`));
+  for (const id of ['fuel-flow','oxidizer-flow','oxygen']) assert.match(html, new RegExp(`id="${id}"`));
+  for (const id of ['pump','quench']) assert.doesNotMatch(html, new RegExp(`id="${id}"`));
+  assert.match(html, /id="spectrum-plot"/);
+  assert.match(html, /id="wall-melt-margin"/);
+  assert.match(html, /id="wall-detail"/);
+  assert.match(html, /id="reference-tad"/);
+  assert.match(html, /id="reference-exitance"/);
+  assert.match(html, /id="spectrum-reversal"/);
+  assert.match(html, /id="simulation-mode"/);
+  assert.match(html, /Stabilized reference/);
+  assert.match(html, /Ignition \/ blowoff transient/);
+  assert.match(html, /resolved Voigt transfer/);
+  assert.match(html, /id="exhaust-sensible"/);
+  assert.match(html, /id="flame-wall-clearance"/);
+  assert.match(html, /id="derived-free-flame"/);
+  assert.match(html, /id="fuel-conversion"/);
+  assert.match(html, /coaxial burner · lip = inlet plane/);
+  assert.match(html, /solved inner \+ outer sapphire/);
+  assert.match(html, /Start \/ rerun from t=0/);
+  assert.match(js, /meltReferenceK=2323/);
+  assert.match(js, /thermochemistryCeilingK:params\[P\.TMAX\]/);
+  assert.match(js, /P\.STABILIZED/);
+  assert.match(js, /fuelSLPM \* 0\.1798/);
+  assert.match(js, /P\.PHI/);
+  assert.match(js, /fn flameShape\(/);
+  assert.match(js, /let dFuel=/);
+  assert.match(js, /let nozzleMask=max\(max\(fuelTube,shroudTube\),max\(fuelLip,shroudLip\)\)/);
+  assert.match(js, /let annulus=smoothstep\(rn,rn\+edge,r\)/);
+  assert.doesNotMatch(js, /let background=/);
+  assert.match(js, /-p\[25\]\*\(1\.-top\)/);
+  assert.match(js, /let oxIn=smoothstep\(\.50\*p\[21\]/);
+  assert.match(js, /annularReturnState/);
+  assert.match(js, /maxInnerWallHeatFluxWm2/);
+  assert.match(js, /outflowSensibleW/);
+  assert.match(js, /abs\(z-p\[22\]\)<=\.55\*dz/);
+  assert.match(js, /p1BoundaryLeakageSpeed/);
+  assert.match(js, /openAirHydrogenFlameLength/);
+  assert.match(js, /snapshot:\(\)=>\(\{/);
+  assert.match(js, /step:stepPhysics/);
+  assert.match(js, /input\.addEventListener\('change'/);
+  assert.match(js, /params\[P\.TIME\]=0/);
+  assert.match(js, /physicalTimeS:params\[P\.TIME\]/);
+});

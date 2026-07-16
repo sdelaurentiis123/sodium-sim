@@ -1,0 +1,1102 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Lightcell Engine Lab</title>
+  <style>
+    :root{--bg:#080d15;--panel:#0e1824;--ink:#eef5f3;--muted:#839592;--line:rgba(166,213,205,.14);--amber:#ffc43f;--teal:#5fd2ca;--red:#ef6f62}
+    *{box-sizing:border-box}html{background:var(--bg)}body{margin:0;min-height:100vh;color:var(--ink);font-family:Inter,ui-sans-serif,system-ui,-apple-system,sans-serif;background:radial-gradient(circle at 8% 0,rgba(38,106,103,.18),transparent 30rem),radial-gradient(circle at 90% 35%,rgba(170,91,24,.1),transparent 34rem),var(--bg)}
+    main{max-width:1400px;margin:auto;padding:0 30px 26px}.mono,.brand,.tag,.eyebrow,.unit,footer{font-family:ui-monospace,SFMono-Regular,Menlo,monospace}.top{height:66px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between}.brand{font-weight:700;color:var(--amber);font-size:20px}.brand span{margin-left:12px;color:#bdcbc8;font-size:10px;letter-spacing:.13em}.tag{color:var(--muted);font-size:9px;letter-spacing:.1em}.tag i{display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--teal);box-shadow:0 0 12px var(--teal);margin-right:8px}
+    .intro{padding:36px 0 27px;display:grid;grid-template-columns:1.4fr .8fr;gap:45px;align-items:end}.eyebrow{color:var(--teal);font-size:9px;letter-spacing:.12em;margin:0 0 11px}h1{font-size:clamp(32px,4vw,56px);line-height:.98;letter-spacing:-.055em;font-weight:580;margin:0;max-width:820px}.intro>p{color:#a7b7b4;font-size:14px;line-height:1.55;margin:0;max-width:450px}
+    .grid{display:grid;grid-template-columns:minmax(0,1.55fr) minmax(320px,.72fr);gap:14px}.panel{background:linear-gradient(145deg,rgba(18,28,40,.9),rgba(10,17,26,.78));border:1px solid var(--line);border-radius:5px;overflow:hidden;position:relative}.head{height:57px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;padding:0 18px}.head h2{font-size:13px;font-weight:560;margin:0}.head small{color:var(--teal);font:9px ui-monospace,monospace;margin-right:10px}.head>div{display:flex;align-items:baseline}.legend,.unit{font-size:9px;color:var(--muted);letter-spacing:.05em}.legend b{display:inline-block;width:15px;height:1px;background:var(--amber);vertical-align:middle;margin:0 5px 0 12px}.legend b:last-of-type{background:var(--red)}
+    #transport{display:block;width:100%;height:495px}.metrics{height:72px;border-top:1px solid var(--line);display:grid;grid-template-columns:repeat(3,1fr)}.metrics div{padding:13px 17px;border-right:1px solid var(--line);display:flex;flex-direction:column;gap:5px}.metrics div:last-child{border:0}.metrics span,.control em,.account span,.note{font-size:10px;color:var(--muted);font-style:normal}.metrics strong{font:500 17px ui-monospace,monospace}
+    .controls{min-height:850px}.new{border:0;background:none;color:var(--teal);cursor:pointer;font:10px ui-monospace,monospace}.presets{display:grid;grid-template-columns:repeat(3,1fr);gap:5px;margin:17px 18px 3px}.presets button{border:1px solid var(--line);background:rgba(255,255,255,.015);color:var(--muted);border-radius:3px;padding:8px;cursor:pointer;font:9px ui-monospace,monospace;letter-spacing:.08em;text-transform:uppercase}.presets button:hover,.presets button.on{color:var(--ink);border-color:rgba(95,210,202,.4);background:rgba(95,210,202,.08)}.control{display:block;margin:17px 18px 0}.control>span{display:flex;justify-content:space-between;margin-bottom:8px;font-size:11px}.control output{color:var(--amber);font:11px ui-monospace,monospace}.control em{display:block;margin-top:5px}.control input{width:100%;height:3px;appearance:none;border:0;border-radius:4px;background:linear-gradient(90deg,rgba(95,210,202,.78),rgba(255,196,63,.5))}.control input::-webkit-slider-thumb{appearance:none;width:12px;height:12px;border-radius:50%;background:#f4f7f5;border:2px solid #15242b;cursor:pointer}.account{margin:20px 18px 18px;display:grid;grid-template-columns:1fr auto;gap:6px;font:9px ui-monospace,monospace;text-transform:uppercase}.account strong{color:var(--teal);font-weight:500}.account div{height:2px;background:#ffffff0f;grid-column:1/-1}.account i{display:block;width:100%;height:100%;background:var(--teal);box-shadow:0 0 9px var(--teal)}
+    .spectrum,.readout{min-height:270px}.spectrum canvas{display:block;width:100%;height:212px}.readmain{padding:21px 18px 16px;display:grid;grid-template-columns:1fr auto;align-items:end}.readmain span{font-size:10px;color:var(--muted)}.readmain strong{grid-column:2;grid-row:1/3;color:var(--amber);font:500 34px ui-monospace,monospace}.readmain small{font:9px ui-monospace,monospace;color:#657675;margin-top:5px}.readgrid{display:grid;grid-template-columns:repeat(3,1fr);border-top:1px solid var(--line);border-bottom:1px solid var(--line)}.readgrid div{padding:11px 10px;border-right:1px solid var(--line);display:flex;flex-direction:column;gap:5px}.readgrid div:last-child{border:0}.readgrid span{font-size:9px;color:var(--muted)}.readgrid b{font:500 12px ui-monospace,monospace}.note{margin:12px 18px;line-height:1.45}
+    .engine{grid-column:1/-1}.optimizerbody{display:grid;grid-template-columns:minmax(430px,1.05fr) minmax(520px,.95fr)}.reactorview{border-right:1px solid var(--line);padding:18px}.viewtools{display:flex;gap:6px;align-items:center;margin-bottom:12px}.viewtools button,.optimize{border:1px solid var(--line);background:#ffffff05;color:var(--muted);border-radius:3px;padding:8px 10px;cursor:pointer;font:9px ui-monospace,monospace;letter-spacing:.06em;text-transform:uppercase}.viewtools button.on,.viewtools button:hover{color:var(--ink);border-color:#5fd2ca66;background:#5fd2ca12}.viewtools span{margin-left:auto;color:var(--muted);font:9px ui-monospace,monospace}.optimize{color:#081215;background:var(--teal);border-color:var(--teal);font-weight:700}.optimize:disabled{opacity:.45;cursor:wait}.reactorview canvas{display:block;width:100%}#reactorMap{height:430px;background:#090f18}#pareto{height:180px;margin-top:16px;border-top:1px solid var(--line)}.result{padding:20px 22px}.target{display:grid;grid-template-columns:1fr auto;gap:8px;align-items:end;margin-bottom:16px}.target label{font-size:10px;color:var(--muted)}.target output{display:block;color:var(--amber);font:500 19px ui-monospace,monospace;margin-top:4px}.target input{width:100%;grid-column:1/-1}.optstatus{font:9px ui-monospace,monospace;color:var(--teal);min-height:14px;margin:0 0 14px}.bigmetrics{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--line);border:1px solid var(--line);margin-bottom:18px}.bigmetrics>div{background:#0d1721;padding:14px}.bigmetrics span,.designgrid span,.constraint span{display:block;color:var(--muted);font-size:9px;margin-bottom:7px;text-transform:uppercase;letter-spacing:.05em}.bigmetrics strong{font:500 23px ui-monospace,monospace;color:var(--amber)}.bigmetrics div:nth-child(2) strong{color:var(--teal)}.designgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--line);border:1px solid var(--line);margin-bottom:18px}.designgrid div{background:#0b141e;padding:10px}.designgrid b{font:500 11px ui-monospace,monospace}.constraints{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:18px}.constraint b{font:500 11px ui-monospace,monospace}.constraint div{height:3px;background:#ffffff0d;margin-top:7px}.constraint i{display:block;height:100%;background:var(--teal);max-width:100%}.constraint.bad i{background:var(--red)}.ledger h3{font-size:11px;font-weight:540;margin:0 0 10px}.bar{height:20px;display:flex;overflow:hidden;border-radius:2px;background:#101b25;margin-bottom:11px}.bar i{height:100%;display:block;min-width:1px;transition:width .18s}.seg-electric{background:var(--teal)}.seg-cell{background:#3d7978}.seg-optical{background:var(--amber)}.seg-shell{background:#6e4d45}.ledgerkeys{display:grid;grid-template-columns:repeat(2,1fr);gap:8px 14px}.ledgerkey{display:grid;grid-template-columns:8px 1fr auto;gap:7px;align-items:center;color:var(--muted);font-size:9px}.ledgerkey i{width:7px;height:7px}.ledgerkey b{color:#c7d4d1;font:500 9px ui-monospace,monospace}.assumption{margin:18px 0 0;padding-top:13px;border-top:1px solid var(--line);color:#6f817e;font-size:9px;line-height:1.55}.assumption b{color:#91a5a1;font-weight:550}.assumption a{color:#789d99;text-decoration:none;border-bottom:1px solid #38524f}.ok{color:var(--teal)}.bad{color:var(--red)}footer{display:flex;justify-content:space-between;color:#526260;font-size:8px;letter-spacing:.05em;padding-top:17px}
+    @media(max-width:1000px){.optimizerbody{grid-template-columns:1fr}.reactorview{border-right:0;border-bottom:1px solid var(--line)}}@media(max-width:900px){main{padding:0 16px 22px}.intro{grid-template-columns:1fr;gap:16px}.grid{grid-template-columns:1fr}.engine{grid-column:auto}.controls{min-height:0}.tag{display:none}}@media(max-width:620px){.bigmetrics,.designgrid{grid-template-columns:1fr 1fr}.constraints{grid-template-columns:1fr}}@media(max-width:520px){h1{font-size:35px}#transport{height:320px}#reactorMap{height:340px}.metrics{height:auto;grid-template-columns:1fr}.metrics div{flex-direction:row;justify-content:space-between;border-right:0;border-bottom:1px solid var(--line)}.legend{display:none}.result,.reactorview{padding:14px}.ledgerkeys{grid-template-columns:1fr}footer{flex-direction:column;gap:7px}}
+  </style>
+</head>
+<body>
+<main>
+  <header class="top"><div class="brand">LIGHTCELL <span>ATOMIC ENGINE LAB</span></div><div class="tag"><i></i>NON-LTE · HYPERFINE · PARTIAL REDISTRIBUTION · 3D</div></header>
+  <section class="intro"><div><p class="eyebrow">COMBUSTION → Na 3p POPULATION → D-LINES → HOT MIRROR → PV</p><h1>Can the atoms actually carry the power?</h1></div><p>Line power is derived from a pumped 3s/3p population balance and a finite 3D sodium transport solve—not selected with an efficiency slider.</p></section>
+  <section class="grid">
+    <article class="panel"><div class="head"><div><small>01</small><h2>Photon trajectories</h2></div><div class="legend"><b></b>escaped <b></b>quenched</div></div><canvas id="transport"></canvas><div class="metrics"><div><span>mean scatterings</span><strong id="mScat">—</strong></div><div><span>mean residence</span><strong id="mTime">—</strong></div><div><span>escape fraction</span><strong id="mEscape">—</strong></div></div></article>
+    <aside class="panel controls"><div class="head"><div><small>02</small><h2>Atomic + geometric inputs</h2></div><button class="new" id="rerun">new sample ↻</button></div><div class="presets"><button data-preset="spectroscopy">spectroscopy</button><button data-preset="reactor" class="on">reactor</button><button data-preset="quenched">quench test</button></div>
+      <label class="control"><span><b>Gas temperature</b><output id="tempOut"></output></span><input id="temp" type="range" min="600" max="3500" step="25"><em>Sets Doppler width and operating gas density.</em></label>
+      <label class="control"><span><b>Atomic sodium mixing</b><output id="densityOut"></output></span><input id="density" type="range" min="-2" max="5" step=".05"><em>Log₁₀ ppm of neutral Na in the operating gas.</em></label>
+      <label class="control"><span><b>Buffer pressure</b><output id="pressureOut"></output></span><input id="pressure" type="range" min=".1" max="100" step=".5"><em>Operating pressure; broadening scales from 450 K data.</em></label>
+      <label class="control"><span><b>Na(3p) quench coefficient</b><output id="quenchOut"></output></span><input id="quench" type="range" min="-14" max="-9" step=".05"><em>Log₁₀ kq in cm³/s; currently the key uncertain datum.</em></label>
+      <label class="control"><span><b>Cylinder radius</b><output id="radiusOut"></output></span><input id="radius" type="range" min="2" max="50" step="1"><em>Radial distance to the optical boundary.</em></label>
+      <label class="control"><span><b>Cylinder length</b><output id="lengthOut"></output></span><input id="length" type="range" min="5" max="200" step="5"><em>Finite 3D geometry includes axial escape.</em></label>
+      <label class="control"><span><b>Excitation rate</b><output id="pumpOut"></output></span><input id="pump" type="range" min="3" max="10" step=".05"><em>Log₁₀ pumping rate per ground-state atom per second.</em></label>
+      <label class="control"><span><b>Source-core radius</b><output id="sourceOut"></output></span><input id="source" type="range" min=".05" max="1" step=".05"><em>Fraction of cylinder radius initially excited.</em></label>
+      <div class="account"><span>packet accounting</span><strong id="packetAccount">100.000%</strong><div><i></i></div></div>
+    </aside>
+    <article class="panel spectrum"><div class="head"><div><small>03</small><h2>Emergent line profile</h2></div><span class="unit">WAVELENGTH / nm</span></div><canvas id="spectrum"></canvas></article>
+    <article class="panel readout"><div class="head"><div><small>04</small><h2>Derived atomic physics</h2></div></div><div class="readmain"><span>escape probability / emission</span><strong id="escapeFactor">—</strong><small>Monte Carlo β used by the population solver</small></div><div class="readgrid"><div><span>D2 τ at COG</span><b id="tauD2">—</b></div><div><span>upper 3p fraction</span><b id="tauD1">—</b></div><div><span>line capacity</span><b id="widthAr">—</b></div></div><p class="note" id="physicsNote">Exact-Voigt evaluation, ²³Na hyperfine multiplets, collision-weighted partial redistribution, and finite-cylinder escape.</p></article>
+    <article class="panel engine"><div class="head"><div><small>05</small><h2>Axisymmetric reactor optimizer</h2></div><span class="unit">2D THERMAL · NON-LTE · MONTE CARLO CHECK</span></div><div class="optimizerbody">
+      <section class="reactorview"><div class="viewtools"><button id="mapTemp" class="on">temperature</button><button id="mapMaterial">materials</button><button id="mapSource">heat source</button><span id="mapLegend">300 K → peak</span></div><canvas id="reactorMap" aria-label="Axisymmetric reactor field map"></canvas><canvas id="pareto" aria-label="Optimization candidates by peak temperature and electrical power"></canvas></section>
+      <section class="result">
+        <div class="target"><label>Requested fuel input<output id="fuelTargetOut">10.0 kW</output></label><button class="optimize" id="optimize">optimize safe design</button><input id="fuelTarget" type="range" min="3" max="20" step=".5" value="10"></div>
+        <p class="optstatus" id="optStatus">Reference solution loaded. Run optimization to search the full design envelope.</p>
+        <div class="bigmetrics"><div><span>net electrical</span><strong id="netPower">—</strong></div><div><span>fuel → wire</span><strong id="wireEff">—</strong></div><div><span>robust worst case</span><strong id="robustPower">—</strong></div></div>
+        <div class="designgrid"><div><span>core radius</span><b id="designR">—</b></div><div><span>core length</span><b id="designL">—</b></div><div><span>rated fuel</span><b id="ratedFuel">—</b></div><div><span>sapphire</span><b id="designSap">—</b></div><div><span>insulation</span><b id="designIns">—</b></div><div><span>Na reservoir</span><b id="designReservoir">—</b></div><div><span>argon</span><b id="designPressure">—</b></div><div><span>D2 optical depth</span><b id="designTau">—</b></div><div><span>MC escape β</span><b id="betaCheck">—</b></div></div>
+        <div class="constraints"><div class="constraint" id="gasConstraint"><span>gas peak / 2600 K</span><b id="maxGas">—</b><div><i></i></div></div><div class="constraint" id="sapConstraint"><span>sapphire peak / 2000 K</span><b id="maxSap">—</b><div><i></i></div></div></div>
+        <div class="ledger"><h3>Closed module energy ledger</h3><div class="bar" id="energyBar"><i class="seg-electric"></i><i class="seg-cell"></i><i class="seg-optical"></i><i class="seg-shell"></i></div><div class="ledgerkeys"><div class="ledgerkey"><i class="seg-electric"></i><span>electric</span><b id="keyElectric">—</b></div><div class="ledgerkey"><i class="seg-cell"></i><span>PV heat</span><b id="keyCell">—</b></div><div class="ledgerkey"><i class="seg-optical"></i><span>line loss</span><b id="keyOptical">—</b></div><div class="ledgerkey"><i class="seg-shell"></i><span>reactor boundary</span><b id="keyBoundary">—</b></div></div></div>
+        <p class="assumption"><b>Model boundary.</b> Geometry and rated load are optimized; sodium activity, chemical excitation fraction, quench kinetics, turbulent gas mixing, optical properties, and TPV response are calibration inputs—not optimizer freedoms. The winner is re-run with the full hyperfine packet transport. <span id="closure" class="ok">Energy residual: —</span><br>Basis: <a href="https://webbook.nist.gov/cgi/inchi?ID=C7440235&amp;Mask=4&amp;Plot=on&amp;Type=ANTOINE">NIST Na vapor pressure</a> · <a href="https://www.osti.gov/etdeweb/biblio/20756726">coupled non-LTE transport</a> · <a href="https://mooseframework.inl.gov/modules/heat_transfer/">axisymmetric heat transfer</a></p>
+      </section>
+    </div></article>
+  </section>
+  <footer><span>Na D1 + D2 · HYPERFINE VOIGT · NON-LTE RATE BALANCE · CLOSED ENERGY LEDGER</span><span>2,400 PHOTON PACKETS / RUN</span></footer>
+</main>
+<script>
+/* ENGINE_BUNDLE_START */
+globalThis.__REACTOR_WORKER_SOURCE__ = "\"use strict\";\n(() => {\n  // app/sodium-atomic-engine.ts\n  var C = 299792458;\n  var EV = 1602176634e-28;\n  var KB = 1380649e-29;\n  var U = 16605390666e-37;\n  var MASS_NA = 22.98976928 * U;\n  var RE_CM = 28179403262e-23;\n  var INTEGRATED_CROSS_SECTION = Math.PI * RE_CM * C * 100;\n  var SQRT_PI = Math.sqrt(Math.PI);\n  var AR_FWHM_450K_HZ_PER_TORR = 304e5;\n  var SODIUM_LINES = [\n    {\n      id: \"D2\",\n      wavelengthNm: 588.995,\n      oscillatorStrength: 0.641,\n      A: 616e5,\n      weight: 2,\n      hyperfine: [\n        { lowerF: 1, upperF: 0, offsetMHz: 1041.1688305, strength: 0.0625 },\n        { lowerF: 1, upperF: 1, offsetMHz: 1056.9788305, strength: 0.15625 },\n        { lowerF: 1, upperF: 2, offsetMHz: 1091.3228305, strength: 0.15625 },\n        { lowerF: 2, upperF: 1, offsetMHz: -714.6472983, strength: 0.03125 },\n        { lowerF: 2, upperF: 2, offsetMHz: -680.3032983, strength: 0.15625 },\n        { lowerF: 2, upperF: 3, offsetMHz: -621.9772983, strength: 0.4375 }\n      ]\n    },\n    {\n      id: \"D1\",\n      wavelengthNm: 589.5924,\n      oscillatorStrength: 0.32,\n      A: 614e5,\n      weight: 1,\n      hyperfine: [\n        { lowerF: 1, upperF: 1, offsetMHz: 989.3307055, strength: 0.0625 },\n        { lowerF: 1, upperF: 2, offsetMHz: 1178.0277055, strength: 0.3125 },\n        { lowerF: 2, upperF: 1, offsetMHz: -782.2954233, strength: 0.3125 },\n        { lowerF: 2, upperF: 2, offsetMHz: -593.5984233, strength: 0.3125 }\n      ]\n    }\n  ];\n  var complex = (re, im = 0) => ({ re, im });\n  var add = (a, b) => complex(a.re + b.re, a.im + b.im);\n  var sub = (a, b) => complex(a.re - b.re, a.im - b.im);\n  var mul = (a, b) => complex(a.re * b.re - a.im * b.im, a.re * b.im + a.im * b.re);\n  var scale = (a, x) => complex(a.re * x, a.im * x);\n  var div = (a, b) => {\n    const d = b.re * b.re + b.im * b.im;\n    return complex((a.re * b.re + a.im * b.im) / d, (a.im * b.re - a.re * b.im) / d);\n  };\n  var expc = (z) => {\n    const e = Math.exp(z.re);\n    return complex(e * Math.cos(z.im), e * Math.sin(z.im));\n  };\n  var alternatingHorner = (u, coefficients) => {\n    let value = complex(coefficients[coefficients.length - 1]);\n    for (let i = coefficients.length - 2; i >= 0; i--)\n      value = sub(complex(coefficients[i]), mul(u, value));\n    return value;\n  };\n  function voigtH(a, x) {\n    const y = Math.max(a, 1e-10);\n    const t = complex(y, -x);\n    const u = mul(t, t);\n    const s = Math.abs(x) + y;\n    let w;\n    if (s >= 15) {\n      w = div(scale(t, 0.5641896), add(complex(0.5), u));\n    } else if (s >= 5.5) {\n      w = div(mul(t, add(complex(1.410474), scale(u, 0.5641896))), add(complex(0.75), mul(u, add(complex(3), u))));\n    } else if (y >= 0.195 * Math.abs(x) - 0.176) {\n      const num = add(complex(16.4955), mul(t, add(complex(20.20933), mul(t, add(complex(11.96482), mul(t, add(complex(3.778987), scale(t, 0.5642236))))))));\n      const den = add(complex(16.4955), mul(t, add(complex(38.82363), mul(t, add(complex(39.27121), mul(t, add(complex(21.69274), mul(t, add(complex(6.699398), t)))))))));\n      w = div(num, den);\n    } else {\n      const un = alternatingHorner(u, [36183.31, 3321.99, 1540.787, 219.031, 35.7668, 1.320522, 0.56419]);\n      const ud = alternatingHorner(u, [32066.6, 24322.8, 9022.23, 2186.18, 364.219, 61.5704, 1.84144, 1]);\n      w = sub(expc(u), mul(t, div(un, ud)));\n    }\n    return Math.max(0, w.re);\n  }\n  function gasDensities(inputs) {\n    const bufferDensityCm3 = inputs.bufferPressureTorr * 133.322368 / (KB * inputs.temperatureK) / 1e6;\n    return {\n      bufferDensityCm3,\n      sodiumDensityCm3: bufferDensityCm3 * inputs.sodiumMixingPpm * 1e-6\n    };\n  }\n  function atomicLineStates(inputs) {\n    const { sodiumDensityCm3 } = gasDensities(inputs);\n    return SODIUM_LINES.map((line) => {\n      const frequencyHz = C / (line.wavelengthNm * 1e-9);\n      const dopplerWidthHz = frequencyHz / C * Math.sqrt(2 * KB * inputs.temperatureK / MASS_NA);\n      const collisionFwhmHz = AR_FWHM_450K_HZ_PER_TORR * inputs.bufferPressureTorr * Math.sqrt(450 / inputs.temperatureK);\n      const lorentzHwhmHz = line.A / (4 * Math.PI) + collisionFwhmHz / 2;\n      const voigtA = lorentzHwhmHz / dopplerWidthHz;\n      const collisionRateS = 2 * Math.PI * collisionFwhmHz;\n      const crdProbability = collisionRateS / (collisionRateS + line.A);\n      const components = line.hyperfine.map((component) => ({\n        ...component,\n        offsetX: component.offsetMHz * 1e6 / dopplerWidthHz\n      }));\n      const aggregateCenter = components.reduce((sum, component) => sum + component.strength * voigtH(voigtA, -component.offsetX), 0);\n      const centerCrossSectionCm2 = INTEGRATED_CROSS_SECTION * line.oscillatorStrength * aggregateCenter / (SQRT_PI * dopplerWidthHz);\n      return {\n        ...line,\n        frequencyHz,\n        dopplerWidthHz,\n        collisionFwhmHz,\n        lorentzHwhmHz,\n        voigtA,\n        crdProbability,\n        components,\n        centerCrossSectionCm2,\n        radialOpticalDepth: sodiumDensityCm3 * inputs.radiusMm / 10 * centerCrossSectionCm2\n      };\n    });\n  }\n  function randomGenerator(seed) {\n    return () => {\n      let t = seed += 1831565813;\n      t = Math.imul(t ^ t >>> 15, t | 1);\n      t ^= t + Math.imul(t ^ t >>> 7, t | 61);\n      return ((t ^ t >>> 14) >>> 0) / 4294967296;\n    };\n  }\n  function gaussian(random) {\n    return Math.sqrt(-Math.log(Math.max(random(), 1e-15))) * Math.cos(2 * Math.PI * random());\n  }\n  function chooseComponent(random, line) {\n    let target = random();\n    for (const component of line.components) {\n      target -= component.strength;\n      if (target <= 0) return component;\n    }\n    return line.components[line.components.length - 1];\n  }\n  function sampleVoigt(random, line, component = chooseComponent(random, line)) {\n    return component.offsetX + gaussian(random) + line.voigtA * Math.tan(Math.PI * (random() - 0.5));\n  }\n  function componentAtAbsorption(random, line, x) {\n    const weights = line.components.map((component) => component.strength * voigtH(line.voigtA, x - component.offsetX));\n    let target = random() * weights.reduce((a, b) => a + b, 0);\n    for (let i = 0; i < weights.length; i++) {\n      target -= weights[i];\n      if (target <= 0) return line.components[i];\n    }\n    return line.components[line.components.length - 1];\n  }\n  function samplePartialRedistribution(random, line, absorbedX, component) {\n    const x = absorbedX - component.offsetX;\n    let velocity = Math.max(-5, Math.min(5, x));\n    const logTarget = (u) => -u * u - Math.log((x - u) ** 2 + line.voigtA ** 2);\n    let logP = logTarget(velocity);\n    for (let i = 0; i < 7; i++) {\n      const trial = velocity + 0.7 * gaussian(random);\n      const trialLogP = logTarget(trial);\n      if (Math.log(Math.max(random(), 1e-15)) < trialLogP - logP) {\n        velocity = trial;\n        logP = trialLogP;\n      }\n    }\n    const mu = 2 * random() - 1;\n    const transverseVelocity = gaussian(random);\n    const projectedVelocity = mu * velocity + Math.sqrt(Math.max(0, 1 - mu * mu)) * transverseVelocity;\n    return component.offsetX + projectedVelocity + line.voigtA * Math.tan(Math.PI * (random() - 0.5));\n  }\n  function isotropicDirection(random) {\n    const z = 2 * random() - 1;\n    const phi = 2 * Math.PI * random();\n    const radial = Math.sqrt(Math.max(0, 1 - z * z));\n    return { x: radial * Math.cos(phi), y: radial * Math.sin(phi), z };\n  }\n  function distanceToBoundary(p, d, radiusCm, halfLengthCm) {\n    const aa = d.x * d.x + d.y * d.y;\n    let radial = Infinity;\n    if (aa > 1e-14) {\n      const b = p.x * d.x + p.y * d.y;\n      radial = (-b + Math.sqrt(Math.max(0, b * b + aa * (radiusCm * radiusCm - p.x * p.x - p.y * p.y)))) / aa;\n    }\n    let axial = Infinity;\n    if (d.z > 1e-14) axial = (halfLengthCm - p.z) / d.z;\n    else if (d.z < -1e-14) axial = (-halfLengthCm - p.z) / d.z;\n    return radial < axial ? { distance: radial, surface: \"radial\" } : { distance: axial, surface: \"axial\" };\n  }\n  function simulateAtomicTransport(inputs, packets = 2400, seed = 1904) {\n    const random = randomGenerator(seed);\n    const lines = atomicLineStates(inputs);\n    const profileLimit = 50, profileStep = 0.01;\n    const profileTables = lines.map((line) => {\n      const values = new Float64Array(Math.round(2 * profileLimit / profileStep) + 1);\n      for (let i = 0; i < values.length; i++) {\n        const x = -profileLimit + i * profileStep;\n        values[i] = line.components.reduce((sum, component) => sum + component.strength * voigtH(line.voigtA, x - component.offsetX), 0);\n      }\n      return values;\n    });\n    const { bufferDensityCm3, sodiumDensityCm3 } = gasDensities(inputs);\n    const quenchRateS = inputs.quenchCoefficientCm3s * bufferDensityCm3;\n    const averageA = (2 * lines[0].A + lines[1].A) / 3;\n    const quenchProbability = quenchRateS / (averageA + quenchRateS);\n    const radiusCm = inputs.radiusMm / 10;\n    const halfLengthCm = inputs.lengthMm / 20;\n    const wavelengthsNm = [];\n    const paths = [];\n    let escaped = 0, quenched = 0, truncated = 0, radialEscapes = 0, axialEscapes = 0;\n    let emissions = 0, scatterTotal = 0, residenceTotal = 0;\n    for (let n = 0; n < packets; n++) {\n      const lineIndex = random() < 2 / 3 ? 0 : 1;\n      const line = lines[lineIndex];\n      const sourceRadius = radiusCm * inputs.sourceRadiusFraction * Math.sqrt(random());\n      const sourceAngle = 2 * Math.PI * random();\n      const p = {\n        x: sourceRadius * Math.cos(sourceAngle),\n        y: sourceRadius * Math.sin(sourceAngle),\n        z: (2 * random() - 1) * halfLengthCm\n      };\n      let x = sampleVoigt(random, line);\n      let scatterings = 0, residenceNs = 0;\n      let alive = true;\n      const points = [{ x: p.x / radiusCm, y: p.y / radiusCm }];\n      let finalSurface = \"truncated\";\n      emissions++;\n      while (alive && scatterings < 4e3) {\n        const direction = isotropicDirection(random);\n        const boundary = distanceToBoundary(p, direction, radiusCm, halfLengthCm);\n        let profile;\n        if (x <= -profileLimit || x >= profileLimit) {\n          profile = line.components.reduce((sum, component) => sum + component.strength * voigtH(line.voigtA, x - component.offsetX), 0);\n        } else {\n          const position = (x + profileLimit) / profileStep;\n          const index = Math.floor(position), fraction = position - index;\n          const table = profileTables[lineIndex];\n          profile = table[index] * (1 - fraction) + table[index + 1] * fraction;\n        }\n        const alpha = Math.max(1e-30, sodiumDensityCm3 * INTEGRATED_CROSS_SECTION * line.oscillatorStrength * profile / (SQRT_PI * line.dopplerWidthHz));\n        const freePathCm = -Math.log(Math.max(random(), 1e-15)) / alpha;\n        const travelCm = Math.min(freePathCm, boundary.distance);\n        residenceNs += travelCm / (C * 100) * 1e9;\n        p.x += direction.x * travelCm;\n        p.y += direction.y * travelCm;\n        p.z += direction.z * travelCm;\n        if (n < 78 && points.length < 40)\n          points.push({ x: p.x / radiusCm, y: p.y / radiusCm });\n        if (freePathCm >= boundary.distance - 1e-10) {\n          escaped++;\n          if (boundary.surface === \"radial\") radialEscapes++;\n          else axialEscapes++;\n          wavelengthsNm.push(C / (line.frequencyHz + x * line.dopplerWidthHz) * 1e9);\n          finalSurface = boundary.surface;\n          alive = false;\n        } else {\n          scatterings++;\n          residenceNs += 1 / (line.A + quenchRateS) * 1e9;\n          if (random() < quenchRateS / (line.A + quenchRateS)) {\n            quenched++;\n            finalSurface = \"quenched\";\n            alive = false;\n          } else {\n            emissions++;\n            if (random() < line.crdProbability) x = sampleVoigt(random, line);\n            else {\n              const component = componentAtAbsorption(random, line, x);\n              x = samplePartialRedistribution(random, line, x, component);\n            }\n          }\n        }\n      }\n      if (alive) truncated++;\n      scatterTotal += scatterings;\n      residenceTotal += residenceNs;\n      if (n < 78) paths.push({ points, escaped: finalSurface === \"radial\" || finalSurface === \"axial\", surface: finalSurface });\n    }\n    return {\n      lines,\n      escaped,\n      quenched,\n      truncated,\n      radialEscapes,\n      axialEscapes,\n      emissions,\n      meanScatters: scatterTotal / packets,\n      meanResidenceNs: residenceTotal / packets,\n      escapeProbabilityPerEmission: emissions ? escaped / emissions : 0,\n      ultimateEscapeFraction: escaped / packets,\n      bufferDensityCm3,\n      sodiumDensityCm3,\n      quenchRateS,\n      quenchProbability,\n      wavelengthsNm,\n      paths\n    };\n  }\n\n  // app/reactor-engine.ts\n  var SIGMA = 5670374419e-17;\n  var TORR_TO_PA = 133.322368;\n  var BAR_TO_PA = 1e5;\n  var PHOTON_EV = 2.104;\n  var PHOTON_J = PHOTON_EV * EV;\n  var DEFAULT_DESIGN = {\n    coreRadiusMm: 28,\n    coreLengthMm: 105,\n    sapphireMm: 3,\n    insulationMm: 18,\n    reservoirTemperatureK: 980,\n    bufferPressureTorr: 55,\n    sourceRadiusFraction: 0.42\n  };\n  var DEFAULT_PHYSICS = {\n    fuelPowerKW: 10,\n    ambientTemperatureK: 300,\n    // Neutral Na activity relative to pure-liquid vapor pressure. This must be\n    // replaced by a measured speciation/activity for the actual salt chemistry.\n    sodiumActivity: 2e-4,\n    // Fraction of chemical input initially delivered to the Na 3s→3p pump.\n    // It is a calibration parameter, never a design variable.\n    excitationFraction: 0.62,\n    quenchCoefficientCm3s: 1e-12,\n    cellBandgapEV: 1.8,\n    cellEQE: 0.88,\n    cellVoltageFraction: 0.82,\n    cellFillFactor: 0.84,\n    cellCoverage: 0.86,\n    mirrorLineTransmission: 0.93,\n    cavityLineSurvival: 0.92,\n    externalConvectionWm2K: 12,\n    externalEmissivity: 0.82,\n    maximumGasTemperatureK: 2600,\n    maximumSapphireTemperatureK: 2e3\n  };\n  var DESIGN_BOUNDS = {\n    coreRadiusMm: [14, 48],\n    coreLengthMm: [55, 190],\n    sapphireMm: [2, 6],\n    insulationMm: [4, 30],\n    // NIST Antoine fit used below is published for 924–1118 K.\n    reservoirTemperatureK: [925, 1100],\n    bufferPressureTorr: [8, 120],\n    sourceRadiusFraction: [0.18, 0.82]\n  };\n  function sodiumVaporPressurePa(temperatureK) {\n    const T = Math.max(924, Math.min(1118, temperatureK));\n    return BAR_TO_PA * 10 ** (2.46077 - 1873.728 / (T - 416.372));\n  }\n  function materialConductivityWmK(material, temperatureK) {\n    const T = Math.max(300, temperatureK);\n    if (material === 0) return 8.5 * (T / 1500) ** 0.42;\n    if (material === 1) return Math.max(4.5, 35 * (300 / T) ** 0.78);\n    return 0.11 + 105e-6 * (T - 300);\n  }\n  function harmonic(a, b) {\n    return 2 * a * b / Math.max(1e-30, a + b);\n  }\n  function cellVolume(r0, r1, dz) {\n    return Math.PI * (r1 * r1 - r0 * r0) * dz;\n  }\n  function classifyMaterial(r, z, design) {\n    const rc = design.coreRadiusMm / 1e3;\n    const zh = design.coreLengthMm / 2e3;\n    const ts = design.sapphireMm / 1e3;\n    if (r < rc && Math.abs(z) < zh) return 0;\n    if (r < rc + ts && Math.abs(z) < zh + ts) return 1;\n    return 2;\n  }\n  function makeGrid(design, nr, nz, ambientK) {\n    const radiusM = (design.coreRadiusMm + design.sapphireMm + design.insulationMm) / 1e3;\n    const halfLengthM = (design.coreLengthMm / 2 + design.sapphireMm + design.insulationMm) / 1e3;\n    const drM = radiusM / nr;\n    const dzM = 2 * halfLengthM / nz;\n    const temperaturesK = new Array(nr * nz).fill(ambientK + 500);\n    const materials = new Array(nr * nz).fill(2);\n    const heatSourceWm3 = new Array(nr * nz).fill(0);\n    for (let j = 0; j < nz; j++) {\n      const z = -halfLengthM + (j + 0.5) * dzM;\n      for (let i = 0; i < nr; i++) {\n        const r = (i + 0.5) * drM;\n        const index = j * nr + i;\n        materials[index] = classifyMaterial(r, z, design);\n        temperaturesK[index] = materials[index] === 0 ? ambientK + 1100 : ambientK + 550;\n      }\n    }\n    return { nr, nz, radiusM, halfLengthM, drM, dzM, temperaturesK, materials, heatSourceWm3 };\n  }\n  function distributeCoreHeat(grid, design, powerW) {\n    const weights = new Array(grid.nr * grid.nz).fill(0);\n    let normalization = 0;\n    const rc = design.coreRadiusMm / 1e3;\n    const zh = design.coreLengthMm / 2e3;\n    const sr = Math.max(0.08, design.sourceRadiusFraction) * rc;\n    const sz = 0.72 * zh;\n    for (let j = 0; j < grid.nz; j++) {\n      const z = -grid.halfLengthM + (j + 0.5) * grid.dzM;\n      for (let i = 0; i < grid.nr; i++) {\n        const index = j * grid.nr + i;\n        if (grid.materials[index] !== 0) continue;\n        const r0 = i * grid.drM;\n        const r1 = (i + 1) * grid.drM;\n        const r = 0.5 * (r0 + r1);\n        const weight = Math.exp(-((r / sr) ** 2) - (z / sz) ** 4);\n        const volume = cellVolume(r0, r1, grid.dzM);\n        weights[index] = weight;\n        normalization += weight * volume;\n      }\n    }\n    for (let i = 0; i < weights.length; i++)\n      grid.heatSourceWm3[i] = normalization > 0 ? powerW * weights[i] / normalization : 0;\n  }\n  function boundaryCoefficient(temperatureK, physics) {\n    const Ta = physics.ambientTemperatureK;\n    return physics.externalConvectionWm2K + physics.externalEmissivity * SIGMA * (temperatureK + Ta) * (temperatureK * temperatureK + Ta * Ta);\n  }\n  function solveThermalField(design, physics, reactorHeatKW, nr = 22, nz = 34, initial) {\n    const reused = Boolean(initial && initial.nr === nr && initial.nz === nz);\n    const grid = reused ? initial : makeGrid(design, nr, nz, physics.ambientTemperatureK);\n    distributeCoreHeat(grid, design, Math.max(0, reactorHeatKW) * 1e3);\n    const { drM: dr, dzM: dz } = grid;\n    const Ta = physics.ambientTemperatureK;\n    if (!reused) {\n      const area = 4 * Math.PI * grid.radiusM * grid.halfLengthM + 2 * Math.PI * grid.radiusM ** 2;\n      const flux = Math.max(0, reactorHeatKW) * 1e3 / Math.max(1e-9, area);\n      let low = Ta, high = 3600;\n      for (let n = 0; n < 45; n++) {\n        const mid = 0.5 * (low + high);\n        const rejected = physics.externalConvectionWm2K * (mid - Ta) + physics.externalEmissivity * SIGMA * (mid ** 4 - Ta ** 4);\n        if (rejected < flux) low = mid;\n        else high = mid;\n      }\n      const surface = 0.5 * (low + high);\n      for (let index = 0; index < grid.temperaturesK.length; index++)\n        grid.temperaturesK[index] = surface + (grid.materials[index] === 0 ? 420 : grid.materials[index] === 1 ? 180 : 40);\n    }\n    let maxDelta = Infinity;\n    let iteration = 0;\n    for (; iteration < 1200 && maxDelta > 0.025; iteration++) {\n      maxDelta = 0;\n      for (let j = 0; j < nz; j++) {\n        for (let i = 0; i < nr; i++) {\n          const index = j * nr + i;\n          const old = grid.temperaturesK[index];\n          const k0 = materialConductivityWmK(grid.materials[index], old);\n          const r0 = i * dr, r1 = (i + 1) * dr, rc = 0.5 * (r0 + r1);\n          const volume = cellVolume(r0, r1, dz);\n          let conductance = 0;\n          let rhs = grid.heatSourceWm3[index] * volume;\n          if (i > 0) {\n            const n = index - 1;\n            const g = harmonic(k0, materialConductivityWmK(grid.materials[n], grid.temperaturesK[n])) * 2 * Math.PI * r0 * dz / dr;\n            conductance += g;\n            rhs += g * grid.temperaturesK[n];\n          }\n          if (i + 1 < nr) {\n            const n = index + 1;\n            const g = harmonic(k0, materialConductivityWmK(grid.materials[n], grid.temperaturesK[n])) * 2 * Math.PI * r1 * dz / dr;\n            conductance += g;\n            rhs += g * grid.temperaturesK[n];\n          } else {\n            const area = 2 * Math.PI * r1 * dz;\n            const g = boundaryCoefficient(old, physics) * area;\n            conductance += g;\n            rhs += g * Ta;\n          }\n          const axialArea = 2 * Math.PI * rc * dr;\n          if (j > 0) {\n            const n = index - nr;\n            const g = harmonic(k0, materialConductivityWmK(grid.materials[n], grid.temperaturesK[n])) * axialArea / dz;\n            conductance += g;\n            rhs += g * grid.temperaturesK[n];\n          } else {\n            const g = boundaryCoefficient(old, physics) * axialArea;\n            conductance += g;\n            rhs += g * Ta;\n          }\n          if (j + 1 < nz) {\n            const n = index + nr;\n            const g = harmonic(k0, materialConductivityWmK(grid.materials[n], grid.temperaturesK[n])) * axialArea / dz;\n            conductance += g;\n            rhs += g * grid.temperaturesK[n];\n          } else {\n            const g = boundaryCoefficient(old, physics) * axialArea;\n            conductance += g;\n            rhs += g * Ta;\n          }\n          const solved = rhs / Math.max(1e-30, conductance);\n          const next = old + 0.92 * (solved - old);\n          grid.temperaturesK[index] = Math.max(Ta, Math.min(6500, next));\n          maxDelta = Math.max(maxDelta, Math.abs(next - old));\n        }\n      }\n    }\n    let boundaryW = 0;\n    for (let j = 0; j < nz; j++) {\n      const index = j * nr + nr - 1;\n      const T = grid.temperaturesK[index];\n      boundaryW += boundaryCoefficient(T, physics) * 2 * Math.PI * grid.radiusM * dz * (T - Ta);\n    }\n    for (const j of [0, nz - 1]) for (let i = 0; i < nr; i++) {\n      const index = j * nr + i;\n      const T = grid.temperaturesK[index];\n      const r0 = i * dr, r1 = (i + 1) * dr;\n      boundaryW += boundaryCoefficient(T, physics) * Math.PI * (r1 * r1 - r0 * r0) * (T - Ta);\n    }\n    return { grid, boundaryHeatKW: boundaryW / 1e3, iterations: iteration, maxDeltaK: maxDelta };\n  }\n  function fieldStatistics(grid) {\n    let gasWeighted = 0, gasVolume = 0;\n    let maxGas = 0, maxSapphire = 0, maxInsulation = 0;\n    for (let j = 0; j < grid.nz; j++) for (let i = 0; i < grid.nr; i++) {\n      const index = j * grid.nr + i;\n      const T = grid.temperaturesK[index];\n      const volume = cellVolume(i * grid.drM, (i + 1) * grid.drM, grid.dzM);\n      if (grid.materials[index] === 0) {\n        gasWeighted += T * volume;\n        gasVolume += volume;\n        maxGas = Math.max(maxGas, T);\n      } else if (grid.materials[index] === 1) maxSapphire = Math.max(maxSapphire, T);\n      else maxInsulation = Math.max(maxInsulation, T);\n    }\n    return {\n      averageGasTemperatureK: gasWeighted / Math.max(1e-30, gasVolume),\n      maximumGasTemperatureK: maxGas,\n      maximumSapphireTemperatureK: maxSapphire,\n      maximumInsulationTemperatureK: maxInsulation\n    };\n  }\n  function escapeCorrelation(tauRadial, tauAxial) {\n    const effectiveTau = 1 / (1 / Math.max(1e-12, tauRadial) + 1 / Math.max(1e-12, tauAxial));\n    return 1 / (1 + 0.17 * effectiveTau * Math.sqrt(Math.max(1, Math.log1p(effectiveTau))));\n  }\n  function reducedAtomicState(design, physics, gasTemperatureK, escapeFactorOverride) {\n    const vapor = sodiumVaporPressurePa(design.reservoirTemperatureK);\n    const sodiumPartialPressurePa = physics.sodiumActivity * vapor;\n    const sodiumDensityCm3 = sodiumPartialPressurePa / (KB * gasTemperatureK) / 1e6;\n    const bufferDensityCm3 = design.bufferPressureTorr * TORR_TO_PA / (KB * gasTemperatureK) / 1e6;\n    const sodiumMixingPpm = 1e6 * sodiumDensityCm3 / Math.max(1e-30, bufferDensityCm3);\n    const volumeCm3 = Math.PI * (design.coreRadiusMm / 10) ** 2 * (design.coreLengthMm / 10);\n    const atomCount = sodiumDensityCm3 * volumeCm3;\n    const excitationKW = physics.fuelPowerKW * physics.excitationFraction;\n    const pumpRateS = excitationKW * 1e3 / Math.max(1e-30, atomCount * PHOTON_J);\n    const atomicInputs = {\n      temperatureK: gasTemperatureK,\n      sodiumMixingPpm,\n      bufferPressureTorr: design.bufferPressureTorr,\n      radiusMm: design.coreRadiusMm,\n      lengthMm: design.coreLengthMm,\n      quenchCoefficientCm3s: physics.quenchCoefficientCm3s,\n      pumpRateS,\n      sourceRadiusFraction: design.sourceRadiusFraction\n    };\n    const lines = atomicLineStates(atomicInputs);\n    const betas = lines.map((line) => escapeCorrelation(\n      line.radialOpticalDepth,\n      line.radialOpticalDepth * design.coreLengthMm / (2 * design.coreRadiusMm)\n    ));\n    const escapeFactor = escapeFactorOverride ?? (2 * betas[0] + betas[1]) / 3;\n    const averageA = (2 * SODIUM_LINES[0].A + SODIUM_LINES[1].A) / 3;\n    const quenchRateS = physics.quenchCoefficientCm3s * bufferDensityCm3;\n    const decayRateS = averageA * escapeFactor + quenchRateS;\n    const upperFraction = Math.min(0.75, pumpRateS / Math.max(1e-30, pumpRateS + decayRateS));\n    const linePowerKW = atomCount * upperFraction * averageA * escapeFactor * PHOTON_J / 1e3;\n    const quenchPowerKW = atomCount * upperFraction * quenchRateS * PHOTON_J / 1e3;\n    return {\n      atomicInputs,\n      sodiumVaporPressurePa: vapor,\n      sodiumPartialPressurePa,\n      sodiumDensityCm3,\n      atomCount,\n      pumpRateS,\n      escapeFactor,\n      quenchRateS,\n      upperFraction,\n      acceptedPumpKW: linePowerKW + quenchPowerKW,\n      linePowerKW,\n      quenchPowerKW,\n      opticalDepthD2: lines[0].radialOpticalDepth\n    };\n  }\n  function opticalAndPV(atomic, physics) {\n    const capture = physics.cellCoverage * physics.mirrorLineTransmission;\n    const recycle = (1 - capture) * physics.cavityLineSurvival;\n    const eventualCapture = capture / Math.max(1e-12, 1 - recycle);\n    const pvIncidentKW = atomic.linePowerKW * Math.min(1, eventualCapture);\n    const lineLossKW = Math.max(0, atomic.linePowerKW - pvIncidentKW);\n    const pvEfficiency = physics.cellBandgapEV <= PHOTON_EV ? physics.cellEQE * physics.cellVoltageFraction * physics.cellFillFactor * physics.cellBandgapEV / PHOTON_EV : 0;\n    const electricPowerKW = pvIncidentKW * pvEfficiency;\n    return {\n      pvIncidentKW,\n      lineLossKW,\n      pvEfficiency,\n      electricPowerKW,\n      cellHeatKW: pvIncidentKW - electricPowerKW\n    };\n  }\n  function simulateReactor(design, physics = DEFAULT_PHYSICS, resolution = \"fine\", escapeFactorOverride) {\n    const nr = resolution === \"fine\" ? 22 : 11;\n    const nz = resolution === \"fine\" ? 34 : 18;\n    let averageGasTemperatureK = 1700;\n    let grid;\n    let atomic = reducedAtomicState(design, physics, averageGasTemperatureK, escapeFactorOverride);\n    let optical = opticalAndPV(atomic, physics);\n    let thermal = solveThermalField(design, physics, physics.fuelPowerKW - atomic.linePowerKW, nr, nz, grid);\n    let totalIterations = 0;\n    for (let coupling = 0; coupling < 3; coupling++) {\n      grid = thermal.grid;\n      const stats2 = fieldStatistics(grid);\n      averageGasTemperatureK = 0.55 * averageGasTemperatureK + 0.45 * stats2.averageGasTemperatureK;\n      atomic = reducedAtomicState(design, physics, averageGasTemperatureK, escapeFactorOverride);\n      optical = opticalAndPV(atomic, physics);\n      const reactorHeatKW2 = Math.max(0, physics.fuelPowerKW - atomic.linePowerKW);\n      thermal = solveThermalField(design, physics, reactorHeatKW2, nr, nz, grid);\n      totalIterations += thermal.iterations;\n      if (coupling >= 1 && (stats2.maximumGasTemperatureK > physics.maximumGasTemperatureK + 1200 || stats2.maximumSapphireTemperatureK > physics.maximumSapphireTemperatureK + 1200)) break;\n    }\n    const stats = fieldStatistics(thermal.grid);\n    const reactorHeatKW = Math.max(0, physics.fuelPowerKW - atomic.linePowerKW);\n    const energyResidualKW = physics.fuelPowerKW - (optical.electricPowerKW + optical.cellHeatKW + optical.lineLossKW + thermal.boundaryHeatKW);\n    const constraintMarginK = Math.min(\n      physics.maximumGasTemperatureK - stats.maximumGasTemperatureK,\n      physics.maximumSapphireTemperatureK - stats.maximumSapphireTemperatureK\n    );\n    return {\n      design,\n      physics,\n      grid: thermal.grid,\n      atomic,\n      ...stats,\n      linePowerKW: atomic.linePowerKW,\n      ...optical,\n      reactorHeatKW,\n      boundaryHeatKW: thermal.boundaryHeatKW,\n      energyResidualKW,\n      efficiency: optical.electricPowerKW / physics.fuelPowerKW,\n      constraintMarginK,\n      feasible: constraintMarginK >= 0 && Math.abs(energyResidualKW) < 0.08 * physics.fuelPowerKW,\n      iterations: totalIterations\n    };\n  }\n  function halton(index, base) {\n    let fraction = 1, value = 0, i = index;\n    while (i > 0) {\n      fraction /= base;\n      value += fraction * (i % base);\n      i = Math.floor(i / base);\n    }\n    return value;\n  }\n  function designFromUnit(values) {\n    const keys = Object.keys(DESIGN_BOUNDS);\n    return Object.fromEntries(keys.map((key, index) => {\n      const [low, high] = DESIGN_BOUNDS[key];\n      return [key, low + values[index] * (high - low)];\n    }));\n  }\n  function score(result) {\n    const thermalPenalty = Math.max(0, -result.constraintMarginK) * 0.02;\n    const closurePenalty = Math.max(0, Math.abs(result.energyResidualKW) - 0.02) * 2;\n    return result.electricPowerKW - thermalPenalty - closurePenalty;\n  }\n  function robustEvaluation(design, physics) {\n    const cases = [\n      {},\n      { excitationFraction: physics.excitationFraction * 0.72 },\n      { quenchCoefficientCm3s: physics.quenchCoefficientCm3s * 8 },\n      { sodiumActivity: physics.sodiumActivity * 0.45 }\n    ];\n    for (const factor of [1, 0.76, 0.58, 0.42]) {\n      const scenarioResults = cases.map((overrides) => simulateReactor(design, {\n        ...physics,\n        ...overrides,\n        fuelPowerKW: physics.fuelPowerKW * factor\n      }, \"coarse\"));\n      if (scenarioResults.every((result) => result.feasible)) return {\n        robustPowerKW: Math.min(...scenarioResults.map((result) => result.electricPowerKW)),\n        ratedFuelPowerKW: physics.fuelPowerKW * factor\n      };\n    }\n    return { robustPowerKW: -Infinity, ratedFuelPowerKW: physics.fuelPowerKW * 0.42 };\n  }\n  function optimizeReactor(physics = DEFAULT_PHYSICS, candidateCount = 56) {\n    const primes = [2, 3, 5, 7, 11, 13, 17];\n    const coarse = [];\n    const anchors = [\n      DEFAULT_DESIGN,\n      { ...DEFAULT_DESIGN, coreRadiusMm: 48, coreLengthMm: 190, sapphireMm: 6, insulationMm: 4, sourceRadiusFraction: 0.7 },\n      { ...DEFAULT_DESIGN, coreRadiusMm: 44, coreLengthMm: 175, sapphireMm: 5, insulationMm: 4, reservoirTemperatureK: 950, bufferPressureTorr: 20, sourceRadiusFraction: 0.68 }\n    ];\n    for (const design of anchors) {\n      const result = simulateReactor(design, physics, \"coarse\");\n      coarse.push({ result, score: score(result) });\n    }\n    for (let n = 1; n <= candidateCount; n++) {\n      const design = designFromUnit(primes.map((base) => halton(n + 7, base)));\n      const result = simulateReactor(design, physics, \"coarse\");\n      coarse.push({ result, score: score(result) });\n    }\n    coarse.sort((a, b) => b.score - a.score);\n    const finalists = coarse.slice(0, 3).map(({ result }) => ({\n      design: result.design,\n      ...robustEvaluation(result.design, physics)\n    })).sort((a, b) => b.robustPowerKW - a.robustPowerKW);\n    let bestDesign = finalists[0].design;\n    let bestRobust = finalists[0].robustPowerKW;\n    let ratedFuelPowerKW = finalists[0].ratedFuelPowerKW;\n    const keys = [\n      \"coreRadiusMm\",\n      \"coreLengthMm\",\n      \"insulationMm\",\n      \"reservoirTemperatureK\",\n      \"bufferPressureTorr\"\n    ];\n    for (let pass = 0; pass < 1; pass++) for (const key of keys) for (const sign of [-1, 1]) {\n      const [low, high] = DESIGN_BOUNDS[key];\n      const trial = { ...bestDesign, [key]: Math.max(low, Math.min(\n        high,\n        bestDesign[key] + sign * (high - low) * (pass ? 0.04 : 0.09)\n      )) };\n      const robust = robustEvaluation(trial, physics);\n      if (robust.robustPowerKW > bestRobust) {\n        bestDesign = trial;\n        bestRobust = robust.robustPowerKW;\n        ratedFuelPowerKW = robust.ratedFuelPowerKW;\n      }\n    }\n    const ratedPhysics = { ...physics, fuelPowerKW: ratedFuelPowerKW };\n    const preliminary = simulateReactor(bestDesign, ratedPhysics, \"fine\");\n    const transport = simulateAtomicTransport(preliminary.atomic.atomicInputs, 1400, 7811);\n    const best = simulateReactor(\n      bestDesign,\n      ratedPhysics,\n      \"fine\",\n      transport.escapeProbabilityPerEmission\n    );\n    best.transportValidation = {\n      packets: 1400,\n      surrogateEscapeFactor: preliminary.atomic.escapeFactor,\n      monteCarloEscapeFactor: transport.escapeProbabilityPerEmission,\n      packetResidual: 1400 - transport.escaped - transport.quenched - transport.truncated\n    };\n    const points = coarse.map(({ result }) => ({\n      design: result.design,\n      electricPowerKW: result.electricPowerKW,\n      efficiency: result.efficiency,\n      maximumTemperatureK: Math.max(result.maximumGasTemperatureK, result.maximumSapphireTemperatureK),\n      feasible: result.feasible,\n      robustPowerKW: finalists.find((item) => item.design === result.design)?.robustPowerKW ?? result.electricPowerKW\n    }));\n    return {\n      best,\n      points,\n      evaluations: coarse.length + 3 * 16 + 10 * 16,\n      robustWorstCaseKW: bestRobust,\n      ratedFuelPowerKW\n    };\n  }\n\n  // app/reactor-worker.ts\n  self.onmessage = (event) => {\n    try {\n      const physics = { ...DEFAULT_PHYSICS, ...event.data.physics ?? {} };\n      const result = optimizeReactor(physics, event.data.candidates ?? 12);\n      self.postMessage({ type: \"result\", result });\n    } catch (error) {\n      self.postMessage({\n        type: \"error\",\n        message: error instanceof Error ? error.message : String(error)\n      });\n    }\n  };\n})();\n";
+"use strict";
+(() => {
+  // app/sodium-atomic-engine.ts
+  var C = 299792458;
+  var H = 662607015e-42;
+  var EV = 1602176634e-28;
+  var KB = 1380649e-29;
+  var U = 16605390666e-37;
+  var MASS_NA = 22.98976928 * U;
+  var RE_CM = 28179403262e-23;
+  var INTEGRATED_CROSS_SECTION = Math.PI * RE_CM * C * 100;
+  var SQRT_PI = Math.sqrt(Math.PI);
+  var AR_FWHM_450K_HZ_PER_TORR = 304e5;
+  var SODIUM_LINES = [
+    {
+      id: "D2",
+      wavelengthNm: 588.995,
+      oscillatorStrength: 0.641,
+      A: 616e5,
+      weight: 2,
+      hyperfine: [
+        { lowerF: 1, upperF: 0, offsetMHz: 1041.1688305, strength: 0.0625 },
+        { lowerF: 1, upperF: 1, offsetMHz: 1056.9788305, strength: 0.15625 },
+        { lowerF: 1, upperF: 2, offsetMHz: 1091.3228305, strength: 0.15625 },
+        { lowerF: 2, upperF: 1, offsetMHz: -714.6472983, strength: 0.03125 },
+        { lowerF: 2, upperF: 2, offsetMHz: -680.3032983, strength: 0.15625 },
+        { lowerF: 2, upperF: 3, offsetMHz: -621.9772983, strength: 0.4375 }
+      ]
+    },
+    {
+      id: "D1",
+      wavelengthNm: 589.5924,
+      oscillatorStrength: 0.32,
+      A: 614e5,
+      weight: 1,
+      hyperfine: [
+        { lowerF: 1, upperF: 1, offsetMHz: 989.3307055, strength: 0.0625 },
+        { lowerF: 1, upperF: 2, offsetMHz: 1178.0277055, strength: 0.3125 },
+        { lowerF: 2, upperF: 1, offsetMHz: -782.2954233, strength: 0.3125 },
+        { lowerF: 2, upperF: 2, offsetMHz: -593.5984233, strength: 0.3125 }
+      ]
+    }
+  ];
+  var complex = (re, im = 0) => ({ re, im });
+  var add = (a, b) => complex(a.re + b.re, a.im + b.im);
+  var sub = (a, b) => complex(a.re - b.re, a.im - b.im);
+  var mul = (a, b) => complex(a.re * b.re - a.im * b.im, a.re * b.im + a.im * b.re);
+  var scale = (a, x) => complex(a.re * x, a.im * x);
+  var div = (a, b) => {
+    const d = b.re * b.re + b.im * b.im;
+    return complex((a.re * b.re + a.im * b.im) / d, (a.im * b.re - a.re * b.im) / d);
+  };
+  var expc = (z) => {
+    const e = Math.exp(z.re);
+    return complex(e * Math.cos(z.im), e * Math.sin(z.im));
+  };
+  var alternatingHorner = (u, coefficients) => {
+    let value = complex(coefficients[coefficients.length - 1]);
+    for (let i = coefficients.length - 2; i >= 0; i--)
+      value = sub(complex(coefficients[i]), mul(u, value));
+    return value;
+  };
+  function voigtH(a, x) {
+    const y = Math.max(a, 1e-10);
+    const t = complex(y, -x);
+    const u = mul(t, t);
+    const s = Math.abs(x) + y;
+    let w;
+    if (s >= 15) {
+      w = div(scale(t, 0.5641896), add(complex(0.5), u));
+    } else if (s >= 5.5) {
+      w = div(mul(t, add(complex(1.410474), scale(u, 0.5641896))), add(complex(0.75), mul(u, add(complex(3), u))));
+    } else if (y >= 0.195 * Math.abs(x) - 0.176) {
+      const num = add(complex(16.4955), mul(t, add(complex(20.20933), mul(t, add(complex(11.96482), mul(t, add(complex(3.778987), scale(t, 0.5642236))))))));
+      const den = add(complex(16.4955), mul(t, add(complex(38.82363), mul(t, add(complex(39.27121), mul(t, add(complex(21.69274), mul(t, add(complex(6.699398), t)))))))));
+      w = div(num, den);
+    } else {
+      const un = alternatingHorner(u, [36183.31, 3321.99, 1540.787, 219.031, 35.7668, 1.320522, 0.56419]);
+      const ud = alternatingHorner(u, [32066.6, 24322.8, 9022.23, 2186.18, 364.219, 61.5704, 1.84144, 1]);
+      w = sub(expc(u), mul(t, div(un, ud)));
+    }
+    return Math.max(0, w.re);
+  }
+  function gasDensities(inputs) {
+    const bufferDensityCm3 = inputs.bufferPressureTorr * 133.322368 / (KB * inputs.temperatureK) / 1e6;
+    return {
+      bufferDensityCm3,
+      sodiumDensityCm3: bufferDensityCm3 * inputs.sodiumMixingPpm * 1e-6
+    };
+  }
+  function atomicLineStates(inputs) {
+    const { sodiumDensityCm3 } = gasDensities(inputs);
+    return SODIUM_LINES.map((line) => {
+      const frequencyHz = C / (line.wavelengthNm * 1e-9);
+      const dopplerWidthHz = frequencyHz / C * Math.sqrt(2 * KB * inputs.temperatureK / MASS_NA);
+      const collisionFwhmHz = AR_FWHM_450K_HZ_PER_TORR * inputs.bufferPressureTorr * Math.sqrt(450 / inputs.temperatureK);
+      const lorentzHwhmHz = line.A / (4 * Math.PI) + collisionFwhmHz / 2;
+      const voigtA = lorentzHwhmHz / dopplerWidthHz;
+      const collisionRateS = 2 * Math.PI * collisionFwhmHz;
+      const crdProbability = collisionRateS / (collisionRateS + line.A);
+      const components = line.hyperfine.map((component) => ({
+        ...component,
+        offsetX: component.offsetMHz * 1e6 / dopplerWidthHz
+      }));
+      const aggregateCenter = components.reduce((sum, component) => sum + component.strength * voigtH(voigtA, -component.offsetX), 0);
+      const centerCrossSectionCm2 = INTEGRATED_CROSS_SECTION * line.oscillatorStrength * aggregateCenter / (SQRT_PI * dopplerWidthHz);
+      return {
+        ...line,
+        frequencyHz,
+        dopplerWidthHz,
+        collisionFwhmHz,
+        lorentzHwhmHz,
+        voigtA,
+        crdProbability,
+        components,
+        centerCrossSectionCm2,
+        radialOpticalDepth: sodiumDensityCm3 * inputs.radiusMm / 10 * centerCrossSectionCm2
+      };
+    });
+  }
+  function randomGenerator(seed2) {
+    return () => {
+      let t = seed2 += 1831565813;
+      t = Math.imul(t ^ t >>> 15, t | 1);
+      t ^= t + Math.imul(t ^ t >>> 7, t | 61);
+      return ((t ^ t >>> 14) >>> 0) / 4294967296;
+    };
+  }
+  function gaussian(random) {
+    return Math.sqrt(-Math.log(Math.max(random(), 1e-15))) * Math.cos(2 * Math.PI * random());
+  }
+  function chooseComponent(random, line) {
+    let target = random();
+    for (const component of line.components) {
+      target -= component.strength;
+      if (target <= 0) return component;
+    }
+    return line.components[line.components.length - 1];
+  }
+  function sampleVoigt(random, line, component = chooseComponent(random, line)) {
+    return component.offsetX + gaussian(random) + line.voigtA * Math.tan(Math.PI * (random() - 0.5));
+  }
+  function componentAtAbsorption(random, line, x) {
+    const weights = line.components.map((component) => component.strength * voigtH(line.voigtA, x - component.offsetX));
+    let target = random() * weights.reduce((a, b) => a + b, 0);
+    for (let i = 0; i < weights.length; i++) {
+      target -= weights[i];
+      if (target <= 0) return line.components[i];
+    }
+    return line.components[line.components.length - 1];
+  }
+  function samplePartialRedistribution(random, line, absorbedX, component) {
+    const x = absorbedX - component.offsetX;
+    let velocity = Math.max(-5, Math.min(5, x));
+    const logTarget = (u) => -u * u - Math.log((x - u) ** 2 + line.voigtA ** 2);
+    let logP = logTarget(velocity);
+    for (let i = 0; i < 7; i++) {
+      const trial = velocity + 0.7 * gaussian(random);
+      const trialLogP = logTarget(trial);
+      if (Math.log(Math.max(random(), 1e-15)) < trialLogP - logP) {
+        velocity = trial;
+        logP = trialLogP;
+      }
+    }
+    const mu = 2 * random() - 1;
+    const transverseVelocity = gaussian(random);
+    const projectedVelocity = mu * velocity + Math.sqrt(Math.max(0, 1 - mu * mu)) * transverseVelocity;
+    return component.offsetX + projectedVelocity + line.voigtA * Math.tan(Math.PI * (random() - 0.5));
+  }
+  function isotropicDirection(random) {
+    const z = 2 * random() - 1;
+    const phi = 2 * Math.PI * random();
+    const radial = Math.sqrt(Math.max(0, 1 - z * z));
+    return { x: radial * Math.cos(phi), y: radial * Math.sin(phi), z };
+  }
+  function distanceToBoundary(p, d, radiusCm, halfLengthCm) {
+    const aa = d.x * d.x + d.y * d.y;
+    let radial = Infinity;
+    if (aa > 1e-14) {
+      const b = p.x * d.x + p.y * d.y;
+      radial = (-b + Math.sqrt(Math.max(0, b * b + aa * (radiusCm * radiusCm - p.x * p.x - p.y * p.y)))) / aa;
+    }
+    let axial = Infinity;
+    if (d.z > 1e-14) axial = (halfLengthCm - p.z) / d.z;
+    else if (d.z < -1e-14) axial = (-halfLengthCm - p.z) / d.z;
+    return radial < axial ? { distance: radial, surface: "radial" } : { distance: axial, surface: "axial" };
+  }
+  function simulateAtomicTransport(inputs, packets = 2400, seed2 = 1904) {
+    const random = randomGenerator(seed2);
+    const lines = atomicLineStates(inputs);
+    const profileLimit = 50, profileStep = 0.01;
+    const profileTables = lines.map((line) => {
+      const values = new Float64Array(Math.round(2 * profileLimit / profileStep) + 1);
+      for (let i = 0; i < values.length; i++) {
+        const x = -profileLimit + i * profileStep;
+        values[i] = line.components.reduce((sum, component) => sum + component.strength * voigtH(line.voigtA, x - component.offsetX), 0);
+      }
+      return values;
+    });
+    const { bufferDensityCm3, sodiumDensityCm3 } = gasDensities(inputs);
+    const quenchRateS = inputs.quenchCoefficientCm3s * bufferDensityCm3;
+    const averageA = (2 * lines[0].A + lines[1].A) / 3;
+    const quenchProbability = quenchRateS / (averageA + quenchRateS);
+    const radiusCm = inputs.radiusMm / 10;
+    const halfLengthCm = inputs.lengthMm / 20;
+    const wavelengthsNm = [];
+    const paths = [];
+    let escaped = 0, quenched = 0, truncated = 0, radialEscapes = 0, axialEscapes = 0;
+    let emissions = 0, scatterTotal = 0, residenceTotal = 0;
+    for (let n = 0; n < packets; n++) {
+      const lineIndex = random() < 2 / 3 ? 0 : 1;
+      const line = lines[lineIndex];
+      const sourceRadius = radiusCm * inputs.sourceRadiusFraction * Math.sqrt(random());
+      const sourceAngle = 2 * Math.PI * random();
+      const p = {
+        x: sourceRadius * Math.cos(sourceAngle),
+        y: sourceRadius * Math.sin(sourceAngle),
+        z: (2 * random() - 1) * halfLengthCm
+      };
+      let x = sampleVoigt(random, line);
+      let scatterings = 0, residenceNs = 0;
+      let alive = true;
+      const points = [{ x: p.x / radiusCm, y: p.y / radiusCm }];
+      let finalSurface = "truncated";
+      emissions++;
+      while (alive && scatterings < 4e3) {
+        const direction = isotropicDirection(random);
+        const boundary = distanceToBoundary(p, direction, radiusCm, halfLengthCm);
+        let profile;
+        if (x <= -profileLimit || x >= profileLimit) {
+          profile = line.components.reduce((sum, component) => sum + component.strength * voigtH(line.voigtA, x - component.offsetX), 0);
+        } else {
+          const position = (x + profileLimit) / profileStep;
+          const index = Math.floor(position), fraction = position - index;
+          const table = profileTables[lineIndex];
+          profile = table[index] * (1 - fraction) + table[index + 1] * fraction;
+        }
+        const alpha = Math.max(1e-30, sodiumDensityCm3 * INTEGRATED_CROSS_SECTION * line.oscillatorStrength * profile / (SQRT_PI * line.dopplerWidthHz));
+        const freePathCm = -Math.log(Math.max(random(), 1e-15)) / alpha;
+        const travelCm = Math.min(freePathCm, boundary.distance);
+        residenceNs += travelCm / (C * 100) * 1e9;
+        p.x += direction.x * travelCm;
+        p.y += direction.y * travelCm;
+        p.z += direction.z * travelCm;
+        if (n < 78 && points.length < 40)
+          points.push({ x: p.x / radiusCm, y: p.y / radiusCm });
+        if (freePathCm >= boundary.distance - 1e-10) {
+          escaped++;
+          if (boundary.surface === "radial") radialEscapes++;
+          else axialEscapes++;
+          wavelengthsNm.push(C / (line.frequencyHz + x * line.dopplerWidthHz) * 1e9);
+          finalSurface = boundary.surface;
+          alive = false;
+        } else {
+          scatterings++;
+          residenceNs += 1 / (line.A + quenchRateS) * 1e9;
+          if (random() < quenchRateS / (line.A + quenchRateS)) {
+            quenched++;
+            finalSurface = "quenched";
+            alive = false;
+          } else {
+            emissions++;
+            if (random() < line.crdProbability) x = sampleVoigt(random, line);
+            else {
+              const component = componentAtAbsorption(random, line, x);
+              x = samplePartialRedistribution(random, line, x, component);
+            }
+          }
+        }
+      }
+      if (alive) truncated++;
+      scatterTotal += scatterings;
+      residenceTotal += residenceNs;
+      if (n < 78) paths.push({ points, escaped: finalSurface === "radial" || finalSurface === "axial", surface: finalSurface });
+    }
+    return {
+      lines,
+      escaped,
+      quenched,
+      truncated,
+      radialEscapes,
+      axialEscapes,
+      emissions,
+      meanScatters: scatterTotal / packets,
+      meanResidenceNs: residenceTotal / packets,
+      escapeProbabilityPerEmission: emissions ? escaped / emissions : 0,
+      ultimateEscapeFraction: escaped / packets,
+      bufferDensityCm3,
+      sodiumDensityCm3,
+      quenchRateS,
+      quenchProbability,
+      wavelengthsNm,
+      paths
+    };
+  }
+  function nonEquilibriumPopulation(inputs, result) {
+    const averageA = (2 * result.lines[0].A + result.lines[1].A) / 3;
+    const photonEV = (2 * H * C / (result.lines[0].wavelengthNm * 1e-9) + H * C / (result.lines[1].wavelengthNm * 1e-9)) / (3 * EV);
+    const effectiveRadiativeRateS = averageA * result.escapeProbabilityPerEmission;
+    const upperFraction = Math.min(0.75, inputs.pumpRateS / (inputs.pumpRateS + effectiveRadiativeRateS + result.quenchRateS));
+    const volumeCm3 = Math.PI * (inputs.radiusMm / 10) ** 2 * (inputs.lengthMm / 10);
+    const atomCount = result.sodiumDensityCm3 * volumeCm3;
+    const linePowerKW = atomCount * upperFraction * effectiveRadiativeRateS * photonEV * EV / 1e3;
+    const quenchPowerKW = atomCount * upperFraction * result.quenchRateS * photonEV * EV / 1e3;
+    const boltzmannUpperFraction = Math.min(1, 3 * Math.exp(-photonEV * EV / (KB * inputs.temperatureK)));
+    return {
+      photonEV,
+      effectiveRadiativeRateS,
+      upperFraction,
+      boltzmannUpperFraction,
+      enhancement: upperFraction / Math.max(boltzmannUpperFraction, 1e-30),
+      volumeCm3,
+      atomCount,
+      linePowerKW,
+      quenchPowerKW,
+      pumpPowerKW: linePowerKW + quenchPowerKW
+    };
+  }
+
+  // app/reactor-engine.ts
+  var SIGMA = 5670374419e-17;
+  var TORR_TO_PA = 133.322368;
+  var BAR_TO_PA = 1e5;
+  var PHOTON_EV = 2.104;
+  var PHOTON_J = PHOTON_EV * EV;
+  var DEFAULT_PHYSICS = {
+    fuelPowerKW: 10,
+    ambientTemperatureK: 300,
+    // Neutral Na activity relative to pure-liquid vapor pressure. This must be
+    // replaced by a measured speciation/activity for the actual salt chemistry.
+    sodiumActivity: 2e-4,
+    // Fraction of chemical input initially delivered to the Na 3s→3p pump.
+    // It is a calibration parameter, never a design variable.
+    excitationFraction: 0.62,
+    quenchCoefficientCm3s: 1e-12,
+    cellBandgapEV: 1.8,
+    cellEQE: 0.88,
+    cellVoltageFraction: 0.82,
+    cellFillFactor: 0.84,
+    cellCoverage: 0.86,
+    mirrorLineTransmission: 0.93,
+    cavityLineSurvival: 0.92,
+    externalConvectionWm2K: 12,
+    externalEmissivity: 0.82,
+    maximumGasTemperatureK: 2600,
+    maximumSapphireTemperatureK: 2e3
+  };
+  function sodiumVaporPressurePa(temperatureK) {
+    const T = Math.max(924, Math.min(1118, temperatureK));
+    return BAR_TO_PA * 10 ** (2.46077 - 1873.728 / (T - 416.372));
+  }
+  function materialConductivityWmK(material, temperatureK) {
+    const T = Math.max(300, temperatureK);
+    if (material === 0) return 8.5 * (T / 1500) ** 0.42;
+    if (material === 1) return Math.max(4.5, 35 * (300 / T) ** 0.78);
+    return 0.11 + 105e-6 * (T - 300);
+  }
+  function harmonic(a, b) {
+    return 2 * a * b / Math.max(1e-30, a + b);
+  }
+  function cellVolume(r0, r1, dz) {
+    return Math.PI * (r1 * r1 - r0 * r0) * dz;
+  }
+  function classifyMaterial(r, z, design) {
+    const rc = design.coreRadiusMm / 1e3;
+    const zh = design.coreLengthMm / 2e3;
+    const ts = design.sapphireMm / 1e3;
+    if (r < rc && Math.abs(z) < zh) return 0;
+    if (r < rc + ts && Math.abs(z) < zh + ts) return 1;
+    return 2;
+  }
+  function makeGrid(design, nr, nz, ambientK) {
+    const radiusM = (design.coreRadiusMm + design.sapphireMm + design.insulationMm) / 1e3;
+    const halfLengthM = (design.coreLengthMm / 2 + design.sapphireMm + design.insulationMm) / 1e3;
+    const drM = radiusM / nr;
+    const dzM = 2 * halfLengthM / nz;
+    const temperaturesK = new Array(nr * nz).fill(ambientK + 500);
+    const materials = new Array(nr * nz).fill(2);
+    const heatSourceWm3 = new Array(nr * nz).fill(0);
+    for (let j = 0; j < nz; j++) {
+      const z = -halfLengthM + (j + 0.5) * dzM;
+      for (let i = 0; i < nr; i++) {
+        const r = (i + 0.5) * drM;
+        const index = j * nr + i;
+        materials[index] = classifyMaterial(r, z, design);
+        temperaturesK[index] = materials[index] === 0 ? ambientK + 1100 : ambientK + 550;
+      }
+    }
+    return { nr, nz, radiusM, halfLengthM, drM, dzM, temperaturesK, materials, heatSourceWm3 };
+  }
+  function distributeCoreHeat(grid, design, powerW) {
+    const weights = new Array(grid.nr * grid.nz).fill(0);
+    let normalization = 0;
+    const rc = design.coreRadiusMm / 1e3;
+    const zh = design.coreLengthMm / 2e3;
+    const sr = Math.max(0.08, design.sourceRadiusFraction) * rc;
+    const sz = 0.72 * zh;
+    for (let j = 0; j < grid.nz; j++) {
+      const z = -grid.halfLengthM + (j + 0.5) * grid.dzM;
+      for (let i = 0; i < grid.nr; i++) {
+        const index = j * grid.nr + i;
+        if (grid.materials[index] !== 0) continue;
+        const r0 = i * grid.drM;
+        const r1 = (i + 1) * grid.drM;
+        const r = 0.5 * (r0 + r1);
+        const weight = Math.exp(-((r / sr) ** 2) - (z / sz) ** 4);
+        const volume = cellVolume(r0, r1, grid.dzM);
+        weights[index] = weight;
+        normalization += weight * volume;
+      }
+    }
+    for (let i = 0; i < weights.length; i++)
+      grid.heatSourceWm3[i] = normalization > 0 ? powerW * weights[i] / normalization : 0;
+  }
+  function boundaryCoefficient(temperatureK, physics) {
+    const Ta = physics.ambientTemperatureK;
+    return physics.externalConvectionWm2K + physics.externalEmissivity * SIGMA * (temperatureK + Ta) * (temperatureK * temperatureK + Ta * Ta);
+  }
+  function solveThermalField(design, physics, reactorHeatKW, nr = 22, nz = 34, initial) {
+    const reused = Boolean(initial && initial.nr === nr && initial.nz === nz);
+    const grid = reused ? initial : makeGrid(design, nr, nz, physics.ambientTemperatureK);
+    distributeCoreHeat(grid, design, Math.max(0, reactorHeatKW) * 1e3);
+    const { drM: dr, dzM: dz } = grid;
+    const Ta = physics.ambientTemperatureK;
+    if (!reused) {
+      const area = 4 * Math.PI * grid.radiusM * grid.halfLengthM + 2 * Math.PI * grid.radiusM ** 2;
+      const flux = Math.max(0, reactorHeatKW) * 1e3 / Math.max(1e-9, area);
+      let low = Ta, high = 3600;
+      for (let n = 0; n < 45; n++) {
+        const mid = 0.5 * (low + high);
+        const rejected = physics.externalConvectionWm2K * (mid - Ta) + physics.externalEmissivity * SIGMA * (mid ** 4 - Ta ** 4);
+        if (rejected < flux) low = mid;
+        else high = mid;
+      }
+      const surface = 0.5 * (low + high);
+      for (let index = 0; index < grid.temperaturesK.length; index++)
+        grid.temperaturesK[index] = surface + (grid.materials[index] === 0 ? 420 : grid.materials[index] === 1 ? 180 : 40);
+    }
+    let maxDelta = Infinity;
+    let iteration = 0;
+    for (; iteration < 1200 && maxDelta > 0.025; iteration++) {
+      maxDelta = 0;
+      for (let j = 0; j < nz; j++) {
+        for (let i = 0; i < nr; i++) {
+          const index = j * nr + i;
+          const old = grid.temperaturesK[index];
+          const k0 = materialConductivityWmK(grid.materials[index], old);
+          const r0 = i * dr, r1 = (i + 1) * dr, rc = 0.5 * (r0 + r1);
+          const volume = cellVolume(r0, r1, dz);
+          let conductance = 0;
+          let rhs = grid.heatSourceWm3[index] * volume;
+          if (i > 0) {
+            const n = index - 1;
+            const g = harmonic(k0, materialConductivityWmK(grid.materials[n], grid.temperaturesK[n])) * 2 * Math.PI * r0 * dz / dr;
+            conductance += g;
+            rhs += g * grid.temperaturesK[n];
+          }
+          if (i + 1 < nr) {
+            const n = index + 1;
+            const g = harmonic(k0, materialConductivityWmK(grid.materials[n], grid.temperaturesK[n])) * 2 * Math.PI * r1 * dz / dr;
+            conductance += g;
+            rhs += g * grid.temperaturesK[n];
+          } else {
+            const area = 2 * Math.PI * r1 * dz;
+            const g = boundaryCoefficient(old, physics) * area;
+            conductance += g;
+            rhs += g * Ta;
+          }
+          const axialArea = 2 * Math.PI * rc * dr;
+          if (j > 0) {
+            const n = index - nr;
+            const g = harmonic(k0, materialConductivityWmK(grid.materials[n], grid.temperaturesK[n])) * axialArea / dz;
+            conductance += g;
+            rhs += g * grid.temperaturesK[n];
+          } else {
+            const g = boundaryCoefficient(old, physics) * axialArea;
+            conductance += g;
+            rhs += g * Ta;
+          }
+          if (j + 1 < nz) {
+            const n = index + nr;
+            const g = harmonic(k0, materialConductivityWmK(grid.materials[n], grid.temperaturesK[n])) * axialArea / dz;
+            conductance += g;
+            rhs += g * grid.temperaturesK[n];
+          } else {
+            const g = boundaryCoefficient(old, physics) * axialArea;
+            conductance += g;
+            rhs += g * Ta;
+          }
+          const solved = rhs / Math.max(1e-30, conductance);
+          const next = old + 0.92 * (solved - old);
+          grid.temperaturesK[index] = Math.max(Ta, Math.min(6500, next));
+          maxDelta = Math.max(maxDelta, Math.abs(next - old));
+        }
+      }
+    }
+    let boundaryW = 0;
+    for (let j = 0; j < nz; j++) {
+      const index = j * nr + nr - 1;
+      const T = grid.temperaturesK[index];
+      boundaryW += boundaryCoefficient(T, physics) * 2 * Math.PI * grid.radiusM * dz * (T - Ta);
+    }
+    for (const j of [0, nz - 1]) for (let i = 0; i < nr; i++) {
+      const index = j * nr + i;
+      const T = grid.temperaturesK[index];
+      const r0 = i * dr, r1 = (i + 1) * dr;
+      boundaryW += boundaryCoefficient(T, physics) * Math.PI * (r1 * r1 - r0 * r0) * (T - Ta);
+    }
+    return { grid, boundaryHeatKW: boundaryW / 1e3, iterations: iteration, maxDeltaK: maxDelta };
+  }
+  function fieldStatistics(grid) {
+    let gasWeighted = 0, gasVolume = 0;
+    let maxGas = 0, maxSapphire = 0, maxInsulation = 0;
+    for (let j = 0; j < grid.nz; j++) for (let i = 0; i < grid.nr; i++) {
+      const index = j * grid.nr + i;
+      const T = grid.temperaturesK[index];
+      const volume = cellVolume(i * grid.drM, (i + 1) * grid.drM, grid.dzM);
+      if (grid.materials[index] === 0) {
+        gasWeighted += T * volume;
+        gasVolume += volume;
+        maxGas = Math.max(maxGas, T);
+      } else if (grid.materials[index] === 1) maxSapphire = Math.max(maxSapphire, T);
+      else maxInsulation = Math.max(maxInsulation, T);
+    }
+    return {
+      averageGasTemperatureK: gasWeighted / Math.max(1e-30, gasVolume),
+      maximumGasTemperatureK: maxGas,
+      maximumSapphireTemperatureK: maxSapphire,
+      maximumInsulationTemperatureK: maxInsulation
+    };
+  }
+  function escapeCorrelation(tauRadial, tauAxial) {
+    const effectiveTau = 1 / (1 / Math.max(1e-12, tauRadial) + 1 / Math.max(1e-12, tauAxial));
+    return 1 / (1 + 0.17 * effectiveTau * Math.sqrt(Math.max(1, Math.log1p(effectiveTau))));
+  }
+  function reducedAtomicState(design, physics, gasTemperatureK, escapeFactorOverride) {
+    const vapor = sodiumVaporPressurePa(design.reservoirTemperatureK);
+    const sodiumPartialPressurePa = physics.sodiumActivity * vapor;
+    const sodiumDensityCm3 = sodiumPartialPressurePa / (KB * gasTemperatureK) / 1e6;
+    const bufferDensityCm3 = design.bufferPressureTorr * TORR_TO_PA / (KB * gasTemperatureK) / 1e6;
+    const sodiumMixingPpm = 1e6 * sodiumDensityCm3 / Math.max(1e-30, bufferDensityCm3);
+    const volumeCm3 = Math.PI * (design.coreRadiusMm / 10) ** 2 * (design.coreLengthMm / 10);
+    const atomCount = sodiumDensityCm3 * volumeCm3;
+    const excitationKW = physics.fuelPowerKW * physics.excitationFraction;
+    const pumpRateS = excitationKW * 1e3 / Math.max(1e-30, atomCount * PHOTON_J);
+    const atomicInputs = {
+      temperatureK: gasTemperatureK,
+      sodiumMixingPpm,
+      bufferPressureTorr: design.bufferPressureTorr,
+      radiusMm: design.coreRadiusMm,
+      lengthMm: design.coreLengthMm,
+      quenchCoefficientCm3s: physics.quenchCoefficientCm3s,
+      pumpRateS,
+      sourceRadiusFraction: design.sourceRadiusFraction
+    };
+    const lines = atomicLineStates(atomicInputs);
+    const betas = lines.map((line) => escapeCorrelation(
+      line.radialOpticalDepth,
+      line.radialOpticalDepth * design.coreLengthMm / (2 * design.coreRadiusMm)
+    ));
+    const escapeFactor = escapeFactorOverride ?? (2 * betas[0] + betas[1]) / 3;
+    const averageA = (2 * SODIUM_LINES[0].A + SODIUM_LINES[1].A) / 3;
+    const quenchRateS = physics.quenchCoefficientCm3s * bufferDensityCm3;
+    const decayRateS = averageA * escapeFactor + quenchRateS;
+    const upperFraction = Math.min(0.75, pumpRateS / Math.max(1e-30, pumpRateS + decayRateS));
+    const linePowerKW = atomCount * upperFraction * averageA * escapeFactor * PHOTON_J / 1e3;
+    const quenchPowerKW = atomCount * upperFraction * quenchRateS * PHOTON_J / 1e3;
+    return {
+      atomicInputs,
+      sodiumVaporPressurePa: vapor,
+      sodiumPartialPressurePa,
+      sodiumDensityCm3,
+      atomCount,
+      pumpRateS,
+      escapeFactor,
+      quenchRateS,
+      upperFraction,
+      acceptedPumpKW: linePowerKW + quenchPowerKW,
+      linePowerKW,
+      quenchPowerKW,
+      opticalDepthD2: lines[0].radialOpticalDepth
+    };
+  }
+  function opticalAndPV(atomic, physics) {
+    const capture = physics.cellCoverage * physics.mirrorLineTransmission;
+    const recycle = (1 - capture) * physics.cavityLineSurvival;
+    const eventualCapture = capture / Math.max(1e-12, 1 - recycle);
+    const pvIncidentKW = atomic.linePowerKW * Math.min(1, eventualCapture);
+    const lineLossKW = Math.max(0, atomic.linePowerKW - pvIncidentKW);
+    const pvEfficiency = physics.cellBandgapEV <= PHOTON_EV ? physics.cellEQE * physics.cellVoltageFraction * physics.cellFillFactor * physics.cellBandgapEV / PHOTON_EV : 0;
+    const electricPowerKW = pvIncidentKW * pvEfficiency;
+    return {
+      pvIncidentKW,
+      lineLossKW,
+      pvEfficiency,
+      electricPowerKW,
+      cellHeatKW: pvIncidentKW - electricPowerKW
+    };
+  }
+  function simulateReactor(design, physics = DEFAULT_PHYSICS, resolution = "fine", escapeFactorOverride) {
+    const nr = resolution === "fine" ? 22 : 11;
+    const nz = resolution === "fine" ? 34 : 18;
+    let averageGasTemperatureK = 1700;
+    let grid;
+    let atomic = reducedAtomicState(design, physics, averageGasTemperatureK, escapeFactorOverride);
+    let optical = opticalAndPV(atomic, physics);
+    let thermal = solveThermalField(design, physics, physics.fuelPowerKW - atomic.linePowerKW, nr, nz, grid);
+    let totalIterations = 0;
+    for (let coupling = 0; coupling < 3; coupling++) {
+      grid = thermal.grid;
+      const stats2 = fieldStatistics(grid);
+      averageGasTemperatureK = 0.55 * averageGasTemperatureK + 0.45 * stats2.averageGasTemperatureK;
+      atomic = reducedAtomicState(design, physics, averageGasTemperatureK, escapeFactorOverride);
+      optical = opticalAndPV(atomic, physics);
+      const reactorHeatKW2 = Math.max(0, physics.fuelPowerKW - atomic.linePowerKW);
+      thermal = solveThermalField(design, physics, reactorHeatKW2, nr, nz, grid);
+      totalIterations += thermal.iterations;
+      if (coupling >= 1 && (stats2.maximumGasTemperatureK > physics.maximumGasTemperatureK + 1200 || stats2.maximumSapphireTemperatureK > physics.maximumSapphireTemperatureK + 1200)) break;
+    }
+    const stats = fieldStatistics(thermal.grid);
+    const reactorHeatKW = Math.max(0, physics.fuelPowerKW - atomic.linePowerKW);
+    const energyResidualKW = physics.fuelPowerKW - (optical.electricPowerKW + optical.cellHeatKW + optical.lineLossKW + thermal.boundaryHeatKW);
+    const constraintMarginK = Math.min(
+      physics.maximumGasTemperatureK - stats.maximumGasTemperatureK,
+      physics.maximumSapphireTemperatureK - stats.maximumSapphireTemperatureK
+    );
+    return {
+      design,
+      physics,
+      grid: thermal.grid,
+      atomic,
+      ...stats,
+      linePowerKW: atomic.linePowerKW,
+      ...optical,
+      reactorHeatKW,
+      boundaryHeatKW: thermal.boundaryHeatKW,
+      energyResidualKW,
+      efficiency: optical.electricPowerKW / physics.fuelPowerKW,
+      constraintMarginK,
+      feasible: constraintMarginK >= 0 && Math.abs(energyResidualKW) < 0.08 * physics.fuelPowerKW,
+      iterations: totalIterations
+    };
+  }
+
+  // app/standalone-engine.ts
+  var PACKETS = 2400;
+  var BINS = 180;
+  var WL_MIN = 588.75;
+  var WL_MAX = 589.85;
+  var presets = {
+    spectroscopy: [1500, 2, 3, -11, 12, 40, 8, 0.35],
+    reactor: [2e3, 3, 50, -13, 30, 100, 9, 0.35],
+    quenched: [2e3, 3, 50, -11, 30, 100, 9, 0.35]
+  };
+  var $ = (id) => document.getElementById(id);
+  var physical = {
+    temp: $("temp"),
+    density: $("density"),
+    pressure: $("pressure"),
+    quench: $("quench"),
+    radius: $("radius"),
+    length: $("length"),
+    pump: $("pump"),
+    source: $("source")
+  };
+  var referenceDesign = {
+    coreRadiusMm: 40.94,
+    coreLengthMm: 162.85,
+    sapphireMm: 5,
+    insulationMm: 4,
+    reservoirTemperatureK: 934.25,
+    bufferPressureTorr: 9.92,
+    sourceRadiusFraction: 0.68
+  };
+  var seed = 1904;
+  var latest = null;
+  var latestInputs = null;
+  var reactorResult = null;
+  var optimizationResult = null;
+  var mapMode = "temperature";
+  var animation = 0;
+  var debounceTimer = 0;
+  function physicalValues() {
+    return {
+      temperatureK: Number(physical.temp.value),
+      sodiumMixingPpm: 10 ** Number(physical.density.value),
+      bufferPressureTorr: Number(physical.pressure.value),
+      quenchCoefficientCm3s: 10 ** Number(physical.quench.value),
+      radiusMm: Number(physical.radius.value),
+      lengthMm: Number(physical.length.value),
+      pumpRateS: 10 ** Number(physical.pump.value),
+      sourceRadiusFraction: Number(physical.source.value)
+    };
+  }
+  function fit(canvas) {
+    const ratio = devicePixelRatio || 1;
+    const rect = canvas.getBoundingClientRect();
+    canvas.width = rect.width * ratio;
+    canvas.height = rect.height * ratio;
+    const context = canvas.getContext("2d");
+    context.setTransform(ratio, 0, 0, ratio, 0, 0);
+    return [context, rect.width, rect.height];
+  }
+  function drawPaths(result, radiusMm) {
+    cancelAnimationFrame(animation);
+    const canvas = $("transport");
+    const [context, width, height] = fit(canvas);
+    const cx = width / 2, cy = height / 2, radius = Math.min(width, height) * 0.365;
+    let frame = 0;
+    function draw() {
+      context.clearRect(0, 0, width, height);
+      const glow = context.createRadialGradient(cx, cy, 0, cx, cy, radius * 1.35);
+      glow.addColorStop(0, "rgba(255,190,52,.16)");
+      glow.addColorStop(0.6, "rgba(249,126,20,.05)");
+      glow.addColorStop(1, "transparent");
+      context.fillStyle = glow;
+      context.fillRect(0, 0, width, height);
+      context.save();
+      context.beginPath();
+      context.arc(cx, cy, radius, 0, 2 * Math.PI);
+      context.clip();
+      context.fillStyle = "rgba(255,170,35,.045)";
+      context.fillRect(cx - radius, cy - radius, 2 * radius, 2 * radius);
+      const visible = Math.floor(frame / 1.6);
+      result.paths.forEach((path, pathIndex) => {
+        if (pathIndex > visible / 3 + 5) return;
+        const count = Math.min(path.points.length - 1, Math.max(0, visible - pathIndex * 3));
+        for (let i = 0; i < count; i++) {
+          const a = path.points[i], b = path.points[i + 1];
+          context.beginPath();
+          context.moveTo(cx + a.x * radius, cy + a.y * radius);
+          context.lineTo(cx + b.x * radius, cy + b.y * radius);
+          const base = path.surface === "quenched" ? "239,111,98" : path.surface === "axial" ? "95,210,202" : "255,197,61";
+          context.strokeStyle = `rgba(${base},${0.1 + 0.35 * i / path.points.length})`;
+          context.lineWidth = pathIndex < 12 ? 1.4 : 0.7;
+          context.stroke();
+        }
+      });
+      context.restore();
+      context.beginPath();
+      context.arc(cx, cy, radius, 0, 2 * Math.PI);
+      context.strokeStyle = "rgba(131,224,218,.42)";
+      context.stroke();
+      context.fillStyle = "rgba(255,255,255,.45)";
+      context.font = "10px ui-monospace,monospace";
+      context.fillText("3D paths projected radially", 15, height - 17);
+      context.textAlign = "right";
+      context.fillText(`${radiusMm.toFixed(0)} mm radius`, width - 15, height - 17);
+      context.textAlign = "left";
+      frame++;
+      if (frame < 300) animation = requestAnimationFrame(draw);
+    }
+    draw();
+  }
+  function histogram(wavelengths) {
+    const bins = Array(BINS).fill(0);
+    for (const wavelength of wavelengths) {
+      const index = Math.floor((wavelength - WL_MIN) / (WL_MAX - WL_MIN) * BINS);
+      if (index >= 0 && index < BINS) bins[index]++;
+    }
+    return bins;
+  }
+  function drawSpectrum(wavelengths) {
+    const bins = histogram(wavelengths);
+    const canvas = $("spectrum");
+    const [context, width, height] = fit(canvas);
+    const pad = { left: 43, right: 12, top: 14, bottom: 27 };
+    const max = Math.max(1, ...bins);
+    context.clearRect(0, 0, width, height);
+    context.strokeStyle = "rgba(255,255,255,.08)";
+    for (let i = 0; i < 4; i++) {
+      const y = pad.top + (height - pad.top - pad.bottom) * i / 3;
+      context.beginPath();
+      context.moveTo(pad.left, y);
+      context.lineTo(width - pad.right, y);
+      context.stroke();
+    }
+    const gradient = context.createLinearGradient(pad.left, 0, width - pad.right, 0);
+    gradient.addColorStop(0, "#f0a22e");
+    gradient.addColorStop(0.62, "#ffe26b");
+    gradient.addColorStop(1, "#5fd2ca");
+    context.beginPath();
+    bins.forEach((value, index) => {
+      const x = pad.left + index / (BINS - 1) * (width - pad.left - pad.right);
+      const y = height - pad.bottom - value / max * (height - pad.top - pad.bottom);
+      if (index) context.lineTo(x, y);
+      else context.moveTo(x, y);
+    });
+    context.strokeStyle = gradient;
+    context.lineWidth = 2.2;
+    context.stroke();
+    context.fillStyle = "rgba(255,255,255,.42)";
+    context.font = "10px ui-monospace,monospace";
+    context.textAlign = "center";
+    [589, 589.3, 589.6].forEach((tick) => context.fillText(`${tick.toFixed(1)} nm`, pad.left + (tick - WL_MIN) / (WL_MAX - WL_MIN) * (width - pad.left - pad.right), height - 9));
+    [["D2", 588.995], ["D1", 589.5924]].forEach(([name, raw]) => {
+      const wavelength = Number(raw), x = pad.left + (wavelength - WL_MIN) / (WL_MAX - WL_MIN) * (width - pad.left - pad.right);
+      context.strokeStyle = "rgba(255,255,255,.16)";
+      context.beginPath();
+      context.moveTo(x, pad.top);
+      context.lineTo(x, height - pad.bottom);
+      context.stroke();
+      context.fillStyle = "rgba(255,255,255,.45)";
+      context.fillText(String(name), x + 12, pad.top + 10);
+    });
+  }
+  var power = (value) => value < 1 ? `${(value * 1e3).toFixed(0)} W` : `${value.toFixed(2)} kW`;
+  function colorRamp(value) {
+    const x = Math.max(0, Math.min(1, value));
+    const stops = [
+      [8, 20, 34],
+      [24, 90, 99],
+      [238, 151, 39],
+      [245, 86, 55],
+      [255, 226, 107]
+    ];
+    const position = x * (stops.length - 1);
+    const index = Math.min(stops.length - 2, Math.floor(position));
+    const f = position - index;
+    return `rgb(${stops[index].map((channel, c) => Math.round(channel * (1 - f) + stops[index + 1][c] * f)).join(",")})`;
+  }
+  function drawReactorMap(result) {
+    const canvas = $("reactorMap");
+    const [context, width, height] = fit(canvas);
+    const grid = result.grid;
+    const pad = { left: 48, right: 18, top: 20, bottom: 34 };
+    const plotWidth = width - pad.left - pad.right;
+    const plotHeight = height - pad.top - pad.bottom;
+    const maxTemperature = Math.max(...grid.temperaturesK);
+    const maxSource = Math.max(...grid.heatSourceWm3, 1);
+    context.clearRect(0, 0, width, height);
+    for (let j = 0; j < grid.nz; j++) for (let side = 0; side < 2; side++) for (let i = 0; i < grid.nr; i++) {
+      const index = j * grid.nr + i;
+      const radial = side ? grid.nr + i : grid.nr - i - 1;
+      const x = pad.left + radial / (2 * grid.nr) * plotWidth;
+      const y = pad.top + (grid.nz - j - 1) / grid.nz * plotHeight;
+      if (mapMode === "temperature") {
+        const normalized = (grid.temperaturesK[index] - result.physics.ambientTemperatureK) / Math.max(1, maxTemperature - result.physics.ambientTemperatureK);
+        context.fillStyle = colorRamp(normalized);
+      } else if (mapMode === "material") {
+        context.fillStyle = ["#d27b2d", "#5fd2ca", "#263642"][grid.materials[index]];
+      } else {
+        context.fillStyle = colorRamp(Math.sqrt(grid.heatSourceWm3[index] / maxSource));
+      }
+      context.fillRect(x, y, plotWidth / (2 * grid.nr) + 0.8, plotHeight / grid.nz + 0.8);
+    }
+    context.strokeStyle = "rgba(255,255,255,.25)";
+    context.strokeRect(pad.left, pad.top, plotWidth, plotHeight);
+    context.beginPath();
+    context.moveTo(pad.left + plotWidth / 2, pad.top);
+    context.lineTo(pad.left + plotWidth / 2, pad.top + plotHeight);
+    context.stroke();
+    context.fillStyle = "rgba(255,255,255,.48)";
+    context.font = "10px ui-monospace,monospace";
+    context.textAlign = "center";
+    context.fillText(`diameter ${(2 * grid.radiusM * 1e3).toFixed(0)} mm`, pad.left + plotWidth / 2, height - 12);
+    context.save();
+    context.translate(13, pad.top + plotHeight / 2);
+    context.rotate(-Math.PI / 2);
+    context.fillText(`length ${(2 * grid.halfLengthM * 1e3).toFixed(0)} mm`, 0, 0);
+    context.restore();
+    $("mapLegend").textContent = mapMode === "temperature" ? `${result.physics.ambientTemperatureK.toFixed(0)} K \u2192 ${maxTemperature.toFixed(0)} K` : mapMode === "material" ? "gas \xB7 sapphire \xB7 insulation" : "normalized volumetric heating";
+  }
+  function drawPareto(points, best) {
+    const canvas = $("pareto");
+    const [context, width, height] = fit(canvas);
+    const pad = { left: 46, right: 16, top: 22, bottom: 28 };
+    context.clearRect(0, 0, width, height);
+    const all = points.length ? points : [{ maximumTemperatureK: Math.max(best.maximumGasTemperatureK, best.maximumSapphireTemperatureK), electricPowerKW: best.electricPowerKW, feasible: best.feasible }];
+    const temperatures = all.map((point) => point.maximumTemperatureK);
+    const powers = all.map((point) => point.electricPowerKW);
+    const minT = Math.min(1200, ...temperatures), maxT = Math.max(2700, ...temperatures);
+    const maxP = Math.max(0.5, ...powers) * 1.12;
+    context.strokeStyle = "rgba(255,255,255,.10)";
+    context.beginPath();
+    context.moveTo(pad.left, pad.top);
+    context.lineTo(pad.left, height - pad.bottom);
+    context.lineTo(width - pad.right, height - pad.bottom);
+    context.stroke();
+    const xAt = (T) => pad.left + (T - minT) / Math.max(1, maxT - minT) * (width - pad.left - pad.right);
+    const yAt = (P) => height - pad.bottom - P / maxP * (height - pad.top - pad.bottom);
+    for (const point of all) {
+      context.beginPath();
+      context.arc(xAt(point.maximumTemperatureK), yAt(point.electricPowerKW), 2.6, 0, 2 * Math.PI);
+      context.fillStyle = point.feasible ? "rgba(95,210,202,.72)" : "rgba(239,111,98,.42)";
+      context.fill();
+    }
+    context.beginPath();
+    context.arc(xAt(Math.max(best.maximumGasTemperatureK, best.maximumSapphireTemperatureK)), yAt(best.electricPowerKW), 5, 0, 2 * Math.PI);
+    context.strokeStyle = "#ffc43f";
+    context.lineWidth = 2;
+    context.stroke();
+    context.fillStyle = "rgba(255,255,255,.45)";
+    context.font = "9px ui-monospace,monospace";
+    context.textAlign = "left";
+    context.fillText("candidate envelope \xB7 peak temperature \u2192", pad.left, height - 9);
+    context.save();
+    context.translate(11, height / 2);
+    context.rotate(-Math.PI / 2);
+    context.fillText("electric kW", 0, 0);
+    context.restore();
+  }
+  function renderReactor(result, robustWorstCaseKW, points = []) {
+    reactorResult = result;
+    $("netPower").textContent = power(result.electricPowerKW);
+    $("wireEff").textContent = `${(result.efficiency * 100).toFixed(1)}%`;
+    $("robustPower").textContent = robustWorstCaseKW > 0 ? power(robustWorstCaseKW) : "not feasible";
+    $("designR").textContent = `${result.design.coreRadiusMm.toFixed(1)} mm`;
+    $("designL").textContent = `${result.design.coreLengthMm.toFixed(1)} mm`;
+    $("ratedFuel").textContent = power(result.physics.fuelPowerKW);
+    $("designSap").textContent = `${result.design.sapphireMm.toFixed(1)} mm`;
+    $("designIns").textContent = `${result.design.insulationMm.toFixed(1)} mm`;
+    $("designReservoir").textContent = `${result.design.reservoirTemperatureK.toFixed(0)} K`;
+    $("designPressure").textContent = `${result.design.bufferPressureTorr.toFixed(1)} Torr`;
+    $("designTau").textContent = result.atomic.opticalDepthD2.toFixed(0);
+    $("betaCheck").textContent = result.transportValidation ? result.transportValidation.monteCarloEscapeFactor.toFixed(5) : `${result.atomic.escapeFactor.toFixed(5)} corr.`;
+    const constraints = [
+      ["gasConstraint", "maxGas", result.maximumGasTemperatureK, result.physics.maximumGasTemperatureK],
+      ["sapConstraint", "maxSap", result.maximumSapphireTemperatureK, result.physics.maximumSapphireTemperatureK]
+    ];
+    for (const [containerId, valueId, value, limit] of constraints) {
+      $(valueId).textContent = `${value.toFixed(0)} K \xB7 ${(limit - value).toFixed(0)} K margin`;
+      const container = $(containerId);
+      container.classList.toggle("bad", value > limit);
+      container.querySelector("i").style.width = `${Math.min(100, 100 * value / limit)}%`;
+    }
+    const values = [result.electricPowerKW, result.cellHeatKW, result.lineLossKW, result.boundaryHeatKW];
+    const names = ["Electric", "Cell", "Optical", "Boundary"];
+    values.forEach((value, index) => {
+      $("key" + names[index]).textContent = `${power(value)} \xB7 ${(100 * value / result.physics.fuelPowerKW).toFixed(1)}%`;
+      $("energyBar").children[index].style.width = `${100 * value / result.physics.fuelPowerKW}%`;
+    });
+    const residual = Math.abs(result.energyResidualKW);
+    $("closure").textContent = `Energy residual: ${power(residual)}`;
+    $("closure").className = residual < 0.02 * result.physics.fuelPowerKW ? "ok" : "bad";
+    drawReactorMap(result);
+    drawPareto(points, result);
+  }
+  function runOptimization() {
+    const button = $("optimize");
+    const fuelPowerKW = Number($("fuelTarget").value);
+    button.disabled = true;
+    $("optStatus").textContent = "Searching geometry and operating conditions; unsafe candidates are being rejected\u2026";
+    const source = globalThis.__REACTOR_WORKER_SOURCE__;
+    if (!source) {
+      $("optStatus").textContent = "Optimizer worker is unavailable in this build.";
+      button.disabled = false;
+      return;
+    }
+    const url = URL.createObjectURL(new Blob([source], { type: "text/javascript" }));
+    const worker = new Worker(url);
+    worker.onmessage = (event) => {
+      if (event.data.type === "result") {
+        optimizationResult = event.data.result;
+        renderReactor(optimizationResult.best, optimizationResult.robustWorstCaseKW, optimizationResult.points);
+        $("optStatus").textContent = `Complete \xB7 ${optimizationResult.evaluations} coupled evaluations \xB7 rated ${optimizationResult.ratedFuelPowerKW.toFixed(1)} kW after uncertainty derating.`;
+      } else $("optStatus").textContent = `Optimization failed: ${event.data.message}`;
+      worker.terminate();
+      URL.revokeObjectURL(url);
+      button.disabled = false;
+    };
+    worker.onerror = () => {
+      $("optStatus").textContent = "Optimization worker failed. Reload and try again.";
+      worker.terminate();
+      URL.revokeObjectURL(url);
+      button.disabled = false;
+    };
+    worker.postMessage({ physics: { fuelPowerKW }, candidates: 12 });
+  }
+  function render(result, input) {
+    const population = nonEquilibriumPopulation(input, result);
+    physical.temp.value = String(input.temperatureK);
+    $("tempOut").textContent = `${input.temperatureK.toFixed(0)} K`;
+    $("densityOut").textContent = `${input.sodiumMixingPpm.toPrecision(3)} ppm \xB7 ${result.sodiumDensityCm3.toExponential(2)} cm\u207B\xB3`;
+    $("pressureOut").textContent = `${input.bufferPressureTorr.toFixed(1)} Torr`;
+    $("quenchOut").textContent = `${input.quenchCoefficientCm3s.toExponential(1)} cm\xB3/s`;
+    $("radiusOut").textContent = `${input.radiusMm.toFixed(0)} mm`;
+    $("lengthOut").textContent = `${input.lengthMm.toFixed(0)} mm`;
+    $("pumpOut").textContent = `${input.pumpRateS.toExponential(1)} s\u207B\xB9`;
+    $("sourceOut").textContent = `${(input.sourceRadiusFraction * 100).toFixed(0)}%`;
+    $("mScat").textContent = result.meanScatters.toFixed(1);
+    $("mTime").textContent = result.meanResidenceNs < 1e3 ? `${result.meanResidenceNs.toFixed(0)} ns` : `${(result.meanResidenceNs / 1e3).toFixed(2)} \xB5s`;
+    $("mEscape").textContent = `${(result.ultimateEscapeFraction * 100).toFixed(1)}%`;
+    $("escapeFactor").textContent = result.escapeProbabilityPerEmission.toFixed(5);
+    $("tauD2").textContent = result.lines[0].radialOpticalDepth.toFixed(1);
+    $("tauD1").textContent = `${(population.upperFraction * 100).toFixed(3)}%`;
+    $("widthAr").textContent = power(population.linePowerKW);
+    $("packetAccount").textContent = `${((result.escaped + result.quenched + result.truncated) / PACKETS * 100).toFixed(3)}%`;
+    $("physicsNote").textContent = `CRD ${(result.lines[0].crdProbability * 100).toFixed(1)}% / PRD ${(100 * (1 - result.lines[0].crdProbability)).toFixed(1)}%. Quench ${(result.quenchProbability * 100).toFixed(3)}% per excitation. 3p is ${population.enhancement.toExponential(2)}\xD7 Boltzmann; population is capped at the 75% non-inverted statistical limit. Radial/axial escapes: ${result.radialEscapes}/${result.axialEscapes}.${result.truncated ? ` ${result.truncated} packets reached the scatter cap.` : ""}`;
+    drawPaths(result, input.radiusMm);
+    drawSpectrum(result.wavelengthsNm);
+  }
+  function run() {
+    const input = physicalValues();
+    const result = simulateAtomicTransport(input, PACKETS, seed++);
+    latest = result;
+    latestInputs = input;
+    render(result, input);
+  }
+  function setPreset(name) {
+    const value = presets[name];
+    [physical.temp.value, physical.density.value, physical.pressure.value, physical.quench.value, physical.radius.value, physical.length.value, physical.pump.value, physical.source.value] = value.map(String);
+    document.querySelectorAll(".presets button").forEach((button) => button.classList.toggle("on", button.dataset.preset === name));
+    run();
+  }
+  Object.values(physical).forEach((input) => input.addEventListener("input", () => {
+    document.querySelectorAll(".presets button").forEach((button) => button.classList.remove("on"));
+    clearTimeout(debounceTimer);
+    debounceTimer = window.setTimeout(run, 140);
+  }));
+  document.querySelectorAll("[data-preset]").forEach((button) => button.addEventListener("click", () => setPreset(button.dataset.preset)));
+  $("rerun").addEventListener("click", run);
+  $("fuelTarget").addEventListener("input", (event) => {
+    $("fuelTargetOut").textContent = `${Number(event.target.value).toFixed(1)} kW`;
+  });
+  $("optimize").addEventListener("click", runOptimization);
+  ["Temp", "Material", "Source"].forEach((name) => $("map" + name).addEventListener("click", () => {
+    mapMode = name === "Temp" ? "temperature" : name === "Material" ? "material" : "source";
+    ["Temp", "Material", "Source"].forEach((other) => $("map" + other).classList.toggle("on", other === name));
+    if (reactorResult) drawReactorMap(reactorResult);
+  }));
+  addEventListener("resize", () => {
+    if (latest && latestInputs) {
+      drawPaths(latest, latestInputs.radiusMm);
+      drawSpectrum(latest.wavelengthsNm);
+    }
+    if (reactorResult) {
+      drawReactorMap(reactorResult);
+      drawPareto(optimizationResult?.points ?? [], reactorResult);
+    }
+  });
+  setPreset("reactor");
+  var reference = simulateReactor(referenceDesign, { ...DEFAULT_PHYSICS, fuelPowerKW: 4.2 }, "fine", 545e-5);
+  reference.transportValidation = {
+    packets: 1400,
+    surrogateEscapeFactor: 492e-5,
+    monteCarloEscapeFactor: 545e-5,
+    packetResidual: 0
+  };
+  renderReactor(reference, 0.42);
+})();
+
+/* ENGINE_BUNDLE_END */
+</script>
+</body>
+</html>
