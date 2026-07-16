@@ -40,6 +40,7 @@ Reference: [Lightcell patent US12136898B2](https://patents.google.com/patent/US1
 - The open-air flame length is only a comparator and is not imposed on the confined flame.
 - A generated Cantera table supplies the operating HP-equilibrium state, the local stoichiometric adiabatic ceiling, O/H/OH radical comparators, and a premixed multicomponent/Soret flame-speed scale. Only the thermochemical ceiling constrains the reduced solve; the premixed speed is displayed, not imposed.
 - A CPU mirror of the local GPU source term verifies that the default stabilized holder cell crosses the 1120 K self-sustaining activation threshold by consuming fuel and stoichiometric oxidizer. With the holder disabled at the same cold state, reaction and heat release remain exactly zero.
+- The automated branch sweep covers air and oxygen-enriched oxidizers, lean and rich global mixtures, 0.5–4 bar, and 2–8 mm fuel nozzles. A 112-cell axial advection–reaction mirror uses the browser timestep, coaxial inlet profiles, nozzle-derived velocities, finite ignition kernel, holder source, and Cantera temperature ceiling. It checks persistent stabilized anchoring, cold unforced non-ignition, transient survival or blowoff, and missing-reactant extinction. This exercises source/throughflow competition; it does not replace the axisymmetric WebGPU transport field.
 
 Reference: [Molkov and Saffers, hydrogen jet-flame correlation](https://publications.iafss.org/publications/fss/10/933).
 

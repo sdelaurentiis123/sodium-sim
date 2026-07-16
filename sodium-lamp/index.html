@@ -27,7 +27,7 @@
         <span>COMBUSTION BRANCH</span>
         <strong id="mode-badge">STABILIZED REFERENCE</strong>
       </div>
-      <p id="mode-explanation">Starts on the burning branch and applies a localized radical-equivalent flame holder at the nozzle lip. Fuel, oxidizer, heat release, sodium excitation and radiation still evolve on the GPU.</p>
+      <p id="mode-explanation">A mesh-resolved burner-lip holder enables chemistry but adds no heat. The flame persists only while transported H₂ and O₂ are consumed.</p>
       <label for="simulation-mode">
         <span>Run mode</span>
         <select id="simulation-mode">
@@ -60,8 +60,14 @@
       </article>
       <article class="nonlte-instrument" aria-label="Non-LTE sodium atomic-state instrument">
         <div class="instrument-head">
-          <span>BRIGHTEST CELL IN b₃ₚ = 10²–10⁵ REGIME</span>
+          <span>MAXIMUM SOLVED b₃ₚ CELL</span>
           <strong>RATE-SOLVED NON-LTE</strong>
+        </div>
+
+        <div class="run-summary" aria-label="Current reactor state">
+          <div><span>combustion state</span><strong id="flame-status">SOLVING FLAME</strong></div>
+          <div><span>peak gas</span><strong id="peak-gas-temperature">—</strong></div>
+          <div><span>peak sapphire</span><strong id="wall-temperature">—</strong></div>
         </div>
 
         <div class="departure-readout">
@@ -72,34 +78,9 @@
           </div>
           <dl>
             <div><dt>probe gas T</dt><dd id="gas-temperature">—</dd></div>
-            <div><dt>peak gas T</dt><dd id="peak-gas-temperature">—</dd></div>
             <div><dt>excitation T</dt><dd id="excitation-temperature">—</dd></div>
             <div><dt>D2 optical depth</dt><dd id="optical-depth">—</dd></div>
           </dl>
-        </div>
-
-        <div class="wall-safety" aria-label="Sapphire thermal margin">
-          <div><span>peak sapphire</span><strong id="wall-temperature">—</strong></div>
-          <div><span>outer sapphire skin</span><strong id="wall-skin-temperature">—</strong></div>
-          <div><span>max through-wall ΔT</span><strong id="wall-melt-margin">—</strong></div>
-          <output id="wall-status">SOLVING WALL</output>
-          <p id="wall-detail">inner-wall heat flux and hotspot solving</p>
-        </div>
-
-        <div class="flame-diagnostics" aria-label="Resolved flame confinement diagnostics">
-          <div><span>resolved flame length</span><strong id="flame-length">—</strong></div>
-          <div><span>radial wall clearance</span><strong id="flame-wall-clearance">—</strong></div>
-          <div><span>axial exit clearance</span><strong id="flame-exit-clearance">—</strong></div>
-          <output id="flame-status">SOLVING FLAME</output>
-          <p id="flame-regime">Nozzle and reaction regime pending…</p>
-        </div>
-
-        <div class="reference-strip" aria-label="External physics reference checks">
-          <div><span>Cantera stoich T<sub>ad</sub></span><strong id="reference-tad">—</strong></div>
-          <div><span>peak gas / T<sub>ad</sub></span><strong id="reference-temperature-ratio">—</strong></div>
-          <div><span>D-line wall exitance</span><strong id="reference-exitance">—</strong></div>
-          <div><span>public peak comparator</span><strong>6.7 kW m⁻²</strong></div>
-          <p id="reference-status">Cantera and public-observable checks pending…</p>
         </div>
 
         <div class="atomic-and-population">
@@ -130,12 +111,6 @@
           </div>
         </div>
 
-        <div class="recycling-strip" aria-label="Photon recycling estimates">
-          <div><span>absorptions / accepted pump</span><strong id="reabsorptions">—</strong></div>
-          <div><span>direct boundary escape / pump</span><strong id="escape-probability">—</strong></div>
-          <div><span>atom + photon residence</span><strong id="residence-time">—</strong></div>
-        </div>
-
         <div class="spectrum-wrap">
           <div class="plot-head"><span>589 nm spectrum at optical boundary</span><span>resolved Voigt transfer · hot core → cooler Na shell</span></div>
           <canvas id="spectrum-plot" width="720" height="260" aria-label="Emergent sodium D2 and D1 spectrum compared with the spontaneous source before radiation trapping"></canvas>
@@ -147,6 +122,37 @@
             <div><span>D2 self-reversal</span><strong id="spectrum-reversal">—</strong></div>
           </div>
         </div>
+
+        <details class="engineering-details">
+          <summary>Thermal, flame and reference diagnostics</summary>
+          <div class="wall-safety" aria-label="Sapphire thermal margin">
+            <div><span>outer sapphire skin</span><strong id="wall-skin-temperature">—</strong></div>
+            <div><span>max through-wall ΔT</span><strong id="wall-melt-margin">—</strong></div>
+            <output id="wall-status">SOLVING WALL</output>
+            <p id="wall-detail">inner-wall heat flux and hotspot solving</p>
+          </div>
+
+          <div class="flame-diagnostics" aria-label="Resolved flame confinement diagnostics">
+            <div><span>resolved flame length</span><strong id="flame-length">—</strong></div>
+            <div><span>radial wall clearance</span><strong id="flame-wall-clearance">—</strong></div>
+            <div><span>axial exit clearance</span><strong id="flame-exit-clearance">—</strong></div>
+            <p id="flame-regime">Nozzle and reaction regime pending…</p>
+          </div>
+
+          <div class="reference-strip" aria-label="External physics reference checks">
+            <div><span>Cantera stoich T<sub>ad</sub></span><strong id="reference-tad">—</strong></div>
+            <div><span>peak gas / T<sub>ad</sub></span><strong id="reference-temperature-ratio">—</strong></div>
+            <div><span>D-line wall exitance</span><strong id="reference-exitance">—</strong></div>
+            <div><span>public peak comparator</span><strong>6.7 kW m⁻²</strong></div>
+            <p id="reference-status">Cantera and public-observable checks pending…</p>
+          </div>
+
+          <div class="recycling-strip" aria-label="Photon recycling estimates">
+            <div><span>absorptions / accepted pump</span><strong id="reabsorptions">—</strong></div>
+            <div><span>direct boundary escape / pump</span><strong id="escape-probability">—</strong></div>
+            <div><span>atom + photon residence</span><strong id="residence-time">—</strong></div>
+          </div>
+        </details>
       </article>
     </section>
 

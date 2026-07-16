@@ -12,6 +12,10 @@ test('sodium lamp is a base-path-safe static application', async () => {
   assert.match(html, /Model boundary: what is solved vs\. assumed/);
   assert.match(html, /RATE-SOLVED NON-LTE/);
   assert.match(html, /Boltzmann is not fed back into the simulation/);
+  const ids=[...html.matchAll(/\bid="([^"]+)"/g)].map((match)=>match[1]);
+  assert.equal(new Set(ids).size,ids.length,'every DOM id must be unique');
+  assert.match(html, /class="run-summary"/);
+  assert.match(html, /class="engineering-details"/);
 });
 
 test('GPU source contains explicit D1/D2 non-LTE kinetics and no LTE closure', async () => {

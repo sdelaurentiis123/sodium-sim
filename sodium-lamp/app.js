@@ -129,8 +129,8 @@ function readControls({commitDesign = false} = {}) {
   ui['mode-badge'].textContent=stabilized?'STABILIZED REFERENCE':'UNFORCED TRANSIENT';
   ui['mode-badge'].className=stabilized?'':'warning';
   ui['mode-explanation'].textContent=stabilized
-    ? 'Starts on the burning branch and applies a localized radical-equivalent flame holder at the nozzle lip. Fuel, oxidizer, heat release, sodium excitation and radiation still evolve on the GPU.'
-    : 'Uses one finite ignition seed and no continuing flame holder. The flame can lift, dim or blow off when fresh cold gas replaces the initial hot kernel.';
+    ? 'A mesh-resolved burner-lip holder enables chemistry but adds no heat. The flame persists only while transported H₂ and O₂ are consumed.'
+    : 'A finite hot kernel is applied once, with no continuing holder. Fresh flow can carry it downstream, so survival or blowoff is an output.';
   const descriptions = [
     'Color + opacity = spontaneous D1 + D2 emissivity from the solved 3p populations.',
     'Color = dimensional gas and solid temperature; the sapphire wall is part of the thermal solve.',

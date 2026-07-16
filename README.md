@@ -42,6 +42,7 @@ Then open `http://127.0.0.1:8000/sodium-lamp/` in a current WebGPU browser.
 ```bash
 npm install
 npm test
+npm run sweep:branches
 ```
 
 The Python reference backend and its benchmark ladder live in
