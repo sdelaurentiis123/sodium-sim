@@ -7,7 +7,9 @@ the local Boltzmann prediction.
 
 ## Live model
 
-The static research artifact is deployed from [`sodium-lamp/`](sodium-lamp/).
+The static research artifact is live at
+[standelaurentiis.com/sodium-lamp/](https://standelaurentiis.com/sodium-lamp/)
+and deployed from [`sodium-lamp/`](sodium-lamp/).
 It includes:
 
 - axisymmetric coaxial H2/oxidizer transport, finite-rate heat release, and
