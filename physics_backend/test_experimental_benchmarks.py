@@ -70,6 +70,16 @@ def test_public_report_includes_reference_chemistry_and_measurement_warning() ->
     assert "No temperature" in video["scope"]
 
 
+def test_public_video_runs_remain_separate_benchmark_cases() -> None:
+    report = public_experiment_benchmark()
+    confinement = report["public_confinement_video"]
+    dynamic = report["public_dynamic_runs"]
+    assert confinement["published_date"] == "2026-07-11"
+    assert dynamic["2026_07_15_nacl_lowering"]["reported_absences"].startswith("no exhaust")
+    assert "swirl" in dynamic["2026_07_16_alumina_swirl_torch"]["reported_configuration"]
+    assert len({confinement["source"], *(run["source"] for run in dynamic.values())}) == 4
+
+
 def test_wire_to_wire_target_exposes_required_fuel_to_light_burden() -> None:
     burden = conversion_feasibility_benchmark()
     assert burden["implied_hydrogen_to_electric_target"] == pytest.approx(0.5)

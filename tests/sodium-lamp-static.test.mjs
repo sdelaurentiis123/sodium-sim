@@ -58,6 +58,18 @@ test('GPU source contains explicit D1/D2 non-LTE kinetics and no LTE closure', a
   assert.match(js, /conversionFeasibility/);
 });
 
+test('WebGPU quenching uses measured flame cross sections rather than guessed constants', async () => {
+  const js = await readFile(new URL('app.js', root), 'utf8');
+  const compute = js.match(/const WGSL = \/\* wgsl \*\/`([\s\S]*?)`;/)?.[1];
+  assert.ok(compute);
+  assert.match(compute,/fn meanRelSpeed/);
+  assert.match(compute,/mix\(9\.3,6\.8/);
+  assert.match(compute,/mix\(39\.,31\./);
+  assert.match(compute,/sigmaA2=22\./);
+  assert.match(compute,/sigmaA2=2\.2/);
+  assert.doesNotMatch(compute,/h2\*3\.8e-16\+o2\*2\.0e-16\+h2o\*5\.0e-16\+n2\*2\.0e-17/);
+});
+
 test('reactor builder separates restart controls from live operating controls', async () => {
   const html = await readFile(new URL('index.html', root), 'utf8');
   const js = await readFile(new URL('app.js', root), 'utf8');

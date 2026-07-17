@@ -16,6 +16,7 @@ import {
   photonRecyclingEstimate,
   reducedNonLteState,
   neutralSodiumFraction,
+  measuredQuenchCoefficient,
   speciesResolvedQuench,
   slabEscapeProbability,
   hydrogenNozzleState,
@@ -104,10 +105,60 @@ test('flame confinement assessment reports geometry and material limits without 
 test('species-resolved quenching reacts to composition, pressure, and uncertainty', () => {
   const h2 = speciesResolvedQuench({temperatureK:1800,pressurePa:1.4e5,composition:{H2:1},scale:1});
   const n2 = speciesResolvedQuench({temperatureK:1800,pressurePa:1.4e5,composition:{N2:1},scale:1});
+  const h2o = speciesResolvedQuench({temperatureK:1800,pressurePa:1.4e5,composition:{H2O:1},scale:1});
   const high = speciesResolvedQuench({temperatureK:1800,pressurePa:2.8e5,composition:{H2:1},scale:2});
-  assert.ok(h2.rateS > 10 * n2.rateS);
+  assert.ok(h2.rateS > n2.rateS);
+  assert.ok(n2.rateS > 5 * h2o.rateS);
   assert.ok(Math.abs(high.rateS / h2.rateS - 4) < 1e-12);
   assert.ok(h2.rateS > CONSTANTS.lines.D2.A);
+  assert.equal(h2.withinMeasuredRange,true);
+  assert.equal(measuredQuenchCoefficient('O2',1200).withinMeasuredRange,false);
+  assert.equal(measuredQuenchCoefficient('O2',1200).crossSectionA2,39);
+});
+
+test('measured flame cross sections convert to thermal rate coefficients dimensionally', () => {
+  const h2Low=measuredQuenchCoefficient('H2',1500);
+  const h2High=measuredQuenchCoefficient('H2',2500);
+  const o2Low=measuredQuenchCoefficient('O2',1720);
+  const n2=measuredQuenchCoefficient('N2',2000);
+  const water=measuredQuenchCoefficient('H2O',2000);
+  assert.equal(h2Low.crossSectionA2,9.3);
+  assert.equal(h2High.crossSectionA2,6.8);
+  assert.equal(o2Low.crossSectionA2,39);
+  assert.ok(Math.abs(h2Low.coefficientM3s/(h2Low.crossSectionA2*1e-20*h2Low.relativeSpeedMS)-1)<1e-14);
+  assert.ok(measuredQuenchCoefficient('O2',2000).coefficientM3s > n2.coefficientM3s);
+  assert.ok(n2.coefficientM3s > measuredQuenchCoefficient('H2',2000).coefficientM3s);
+  assert.ok(n2.coefficientM3s > 5*water.coefficientM3s);
+});
+
+test('LTE is recovered from Planck radiation and detailed-balanced collisions, not imposed', () => {
+  const temperatureK=2000,pressurePa=1.4e5,lte=lteFineStructureFractions(temperatureK);
+  const occupation=(line)=>1/Math.expm1(line.energyEV*CONSTANTS.eV/(CONSTANTS.kB*temperatureK));
+  const photonDensity=(line)=>lineModeDensity(temperatureK,pressurePa,line).modesPerM3*occupation(line);
+  const rates=fineStructureRateBalance({
+    temperatureK,pressurePa,upperD1:lte.D1,upperD2:lte.D2,
+    photonDensityD1:photonDensity(CONSTANTS.lines.D1),
+    photonDensityD2:photonDensity(CONSTANTS.lines.D2),
+    reaction:0,pumpMax:0,composition:{H2:.06,O2:.04,H2O:.52,N2:.38},
+    fineMixingCoefficient:2e-17,
+  });
+  assert.ok(checkRateBalance(rates).relativeResidual<2e-12);
+  for(const line of ['D1','D2']){
+    const r=rates.perLine[line];
+    const residual=r.thermalExcitation+r.absorption+r.fineTransfer-r.spontaneous-r.stimulated-r.quench;
+    const scale=Math.max(r.thermalExcitation+r.absorption,r.spontaneous+r.stimulated+r.quench,1);
+    assert.ok(Math.abs(residual)/scale<2e-12,`${line} must satisfy microscopic detailed balance`);
+  }
+});
+
+test('radiation trapping cannot increase escaped yield when collisional quenching is present', () => {
+  const common={pressurePa:1.4e5,temperatureK:2000,quenchCoefficient:2.25e-16};
+  const thin=photonRecyclingEstimate({...common,opticalDepthD1:.01,opticalDepthD2:.02});
+  const thick=photonRecyclingEstimate({...common,opticalDepthD1:100,opticalDepthD2:200});
+  const moreQuench=photonRecyclingEstimate({...common,quenchCoefficient:4.5e-16,opticalDepthD1:100,opticalDepthD2:200});
+  for(const state of [thin,thick,moreQuench]) assert.ok(state.radiativeEscapeFraction>=0&&state.radiativeEscapeFraction<=1);
+  assert.ok(thick.radiativeEscapeFraction<thin.radiativeEscapeFraction);
+  assert.ok(moreQuench.radiativeEscapeFraction<thick.radiativeEscapeFraction);
 });
 
 test('neutral sodium closure conserves inventory and responds to temperature and rich gas', () => {
@@ -237,6 +288,21 @@ test('resolved line profile is normalized and a cool sodium shell self-reverses 
   assert.ok(spectrum.D2.centerOpticalDepthShell > 1);
   assert.ok(spectrum.D2.reversalDepth > .1);
   assert.equal(spectrum.wavelengthsNM.length,900);
+});
+
+test('optically thin D-line source recovers the statistical D2 to D1 photon ratio', () => {
+  const spectrum=resolvedSodiumSpectrum({
+    pressurePa:1.0e5,
+    core:{temperatureK:2000,sodiumMixingFraction:1e-9,upperD1:1e-5,upperD2:2e-5,pathLengthM:1e-4},
+    shell:{temperatureK:1000,sodiumMixingFraction:0,upperD1:0,upperD2:0,pathLengthM:0},
+    points:4000,
+  });
+  const integrate=(values)=>{
+    const step=spectrum.wavelengthsNM[1]-spectrum.wavelengthsNM[0];
+    return values.reduce((sum,value,index)=>sum+value*step*(index===0||index===values.length-1?.5:1),0);
+  };
+  const d2=integrate(spectrum.D2.source),d1=integrate(spectrum.D1.source);
+  assert.ok(d2/d1>1.98&&d2/d1<2.02);
 });
 
 test('coaxial shear and sapphire screening expose physical scales without claiming failure probability', () => {

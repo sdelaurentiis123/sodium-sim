@@ -64,6 +64,10 @@ diffusion, not a tuned one-step reaction rate.
 - those are partial rates, not a total excitation yield;
 - D-line absorption, spontaneous/stimulated emission, fine-structure mixing,
   quenching, and chemical pumping must all be present in the rate ledger.
+- measured 1500--2500 K quenching cross sections give O2 > N2 > H2 >> H2O
+  in bimolecular rate coefficient near 2000 K; the browser and Python reference
+  both compute `k = sigma * mean relative speed` and flag temperatures outside
+  the measured range;
 
 The strongest non-LTE experimental benchmark is not an inferred departure
 coefficient. It is the jointly fitted absolute D1/D2 spectrum, gas temperature,

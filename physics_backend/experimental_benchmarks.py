@@ -52,6 +52,41 @@ PUBLIC_CONFINEMENT_VIDEO = {
     ),
 }
 
+# Distinct public runs. Do not combine their observables into one implied rig.
+PUBLIC_DYNAMIC_RUNS = {
+    "2026_07_15_nacl_lowering": {
+        "source": "https://x.com/DanielleFong/status/2077515313911042150",
+        "published_date": "2026-07-15",
+        "duration_s": 15.541,
+        "reported_configuration": (
+            "NaCl radiative-efficiency demonstration; an assembly is lowered "
+            "into the chamber at fixed hydrogen fuel rate"
+        ),
+        "reported_absences": "no exhaust-to-oxidizer or salt recuperation",
+        "scope": (
+            "qualitative insertion/diversion transient; clipped camera response "
+            "is not radiometry and dimensions are not disclosed"
+        ),
+    },
+    "2026_07_16_alumina_swirl_torch": {
+        "source": "https://x.com/DanielleFong/status/2077657333476602240",
+        "published_date": "2026-07-16",
+        "duration_s": 12.0,
+        "reported_configuration": (
+            "fully alumina torch with exhaust recuperation, preheated outer "
+            "annulus, and swept/twirled compound nozzle for swirl stabilization"
+        ),
+        "scope": "separate burner architecture; no public calibrated flow or radiometry",
+    },
+    "2026_07_16_improvised_diversion": {
+        "source": "https://x.com/DanielleFong/status/2077657331211673775",
+        "published_date": "2026-07-16",
+        "duration_s": 6.041,
+        "reported_configuration": "improvised hydrogen-flame emitter with additional exhaust diversion",
+        "scope": "separate hardware run; not the July 15 insertion or July 11 confinement run",
+    },
+}
+
 # Gomez Martin et al., J. Phys. Chem. A 121 (2017) 7667--7674.
 # The termolecular value is specific to N2 as the third body. Unit conversion:
 # cm3 -> 1e-6 m3 and cm6 -> 1e-12 m6.
@@ -319,6 +354,7 @@ def public_experiment_benchmark() -> dict:
         ),
         "conversion_feasibility": conversion_feasibility_benchmark(),
         "public_confinement_video": PUBLIC_CONFINEMENT_VIDEO,
+        "public_dynamic_runs": PUBLIC_DYNAMIC_RUNS,
         "salt_vapor_pressure": {
             "at_1200_c": {
                 "NaCl": antoine_vapor_pressure_bar(1473.15, NACL_ANTOINE),

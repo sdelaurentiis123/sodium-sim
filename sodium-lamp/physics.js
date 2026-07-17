@@ -64,16 +64,15 @@ export function conversionFeasibility({
   };
 }
 
-// Na(3p) de-excitation coefficients used by the browser model.  H2 is anchored
-// to the 1500--2500 K flame measurements of Krause et al. (~7--9 A^2); the
-// remaining coefficients are explicit engineering estimates until the actual
-// Lightcell post-flame mixture is measured.  Keeping them separate is crucial:
-// a single coefficient multiplied by total pressure is not a physical mixture.
+// Measured Na(3p) quenching cross sections in 1500--2500 K flames.  Cross
+// sections are converted to rate coefficients with the mean relative thermal
+// speed. Values outside each measured window clamp to the nearest endpoint and
+// are explicitly reported as out of range.
 export const QUENCH_SPECIES = Object.freeze({
-  H2: Object.freeze({ coefficientM3s: 3.8e-16, evidence: 'measured' }),
-  O2: Object.freeze({ coefficientM3s: 2.0e-16, evidence: 'estimate' }),
-  H2O: Object.freeze({ coefficientM3s: 5.0e-16, evidence: 'estimate' }),
-  N2: Object.freeze({ coefficientM3s: 2.0e-17, evidence: 'estimate' }),
+  H2: Object.freeze({ massAMU: 2.01588, rangeK: [1500, 2500], crossSectionA2: [9.3, 6.8], sourceDOI: '10.1016/0022-4073(73)90115-5' }),
+  O2: Object.freeze({ massAMU: 31.9988, rangeK: [1720, 2500], crossSectionA2: [39, 31], sourceDOI: '10.1016/0022-4073(73)90115-5' }),
+  H2O: Object.freeze({ massAMU: 18.01528, rangeK: [1500, 2500], crossSectionA2: [2.2, 2.2], sourceDOI: '10.1016/0022-4073(72)90014-3' }),
+  N2: Object.freeze({ massAMU: 28.0134, rangeK: [1500, 2500], crossSectionA2: [22, 22], sourceDOI: '10.1016/0022-4073(72)90014-3' }),
 });
 
 export const DEFAULT_COMPOSITION = Object.freeze({ H2: 0.06, O2: 0.04, H2O: 0.52, N2: 0.38 });
@@ -84,18 +83,40 @@ export function normalizedComposition(composition = DEFAULT_COMPOSITION) {
   return Object.fromEntries(Object.entries(raw).map(([key, value]) => [key, value / sum]));
 }
 
+export function measuredQuenchCoefficient(species, temperatureK) {
+  const datum = QUENCH_SPECIES[species];
+  if (!datum) throw new RangeError(`unsupported quencher: ${species}`);
+  if (!(temperatureK > 0)) throw new RangeError('temperature must be positive');
+  const boundedTemperatureK = Math.max(datum.rangeK[0], Math.min(datum.rangeK[1], temperatureK));
+  const span = datum.rangeK[1] - datum.rangeK[0];
+  const fraction = span > 0 ? (boundedTemperatureK - datum.rangeK[0]) / span : 0;
+  const crossSectionA2 = datum.crossSectionA2[0] + fraction * (datum.crossSectionA2[1] - datum.crossSectionA2[0]);
+  const reducedMassKg = CONSTANTS.sodiumMass * datum.massAMU / (22.98976928 + datum.massAMU);
+  const relativeSpeedMS = Math.sqrt(8 * CONSTANTS.kB * temperatureK / (Math.PI * reducedMassKg));
+  return {
+    crossSectionA2,
+    relativeSpeedMS,
+    coefficientM3s: crossSectionA2 * 1e-20 * relativeSpeedMS,
+    withinMeasuredRange: temperatureK >= datum.rangeK[0] && temperatureK <= datum.rangeK[1],
+    measuredRangeK: [...datum.rangeK],
+    sourceDOI: datum.sourceDOI,
+  };
+}
+
 export function speciesResolvedQuench({ temperatureK, pressurePa, composition = DEFAULT_COMPOSITION, scale = 1 }) {
   const x = normalizedComposition(composition);
   const numberDensityM3 = pressurePa / (CONSTANTS.kB * temperatureK);
   const perSpecies = Object.fromEntries(Object.entries(x).map(([key, fraction]) => {
-    const coefficientM3s = QUENCH_SPECIES[key].coefficientM3s * scale;
-    return [key, { fraction, coefficientM3s, rateS: fraction * numberDensityM3 * coefficientM3s }];
+    const measurement = measuredQuenchCoefficient(key, temperatureK);
+    const coefficientM3s = measurement.coefficientM3s * scale;
+    return [key, { ...measurement, fraction, coefficientM3s, rateS: fraction * numberDensityM3 * coefficientM3s }];
   }));
   return {
     numberDensityM3,
     effectiveCoefficientM3s: Object.values(perSpecies).reduce((sum, item) => sum + item.fraction * item.coefficientM3s, 0),
     rateS: Object.values(perSpecies).reduce((sum, item) => sum + item.rateS, 0),
     perSpecies,
+    withinMeasuredRange: Object.values(perSpecies).filter((item) => item.fraction > 0).every((item) => item.withinMeasuredRange),
   };
 }
 
