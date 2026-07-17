@@ -64,11 +64,30 @@ test('WebGPU quenching uses measured flame cross sections rather than guessed co
   const compute = js.match(/const WGSL = \/\* wgsl \*\/`([\s\S]*?)`;/)?.[1];
   assert.ok(compute);
   assert.match(compute,/fn meanRelSpeed/);
+  assert.match(compute,/const MNA_AMU:f32=22\.98976928/);
+  assert.match(compute,/let reducedAMU=MNA_AMU\*partnerAMU\/\(MNA_AMU\+partnerAMU\)/);
+  assert.doesNotMatch(compute,/MNA\*partner\/\(MNA\+partner\)/);
   assert.match(compute,/mix\(9\.3,6\.8/);
   assert.match(compute,/mix\(39\.,31\./);
   assert.match(compute,/sigmaA2=22\./);
   assert.match(compute,/sigmaA2=2\.2/);
   assert.doesNotMatch(compute,/h2\*3\.8e-16\+o2\*2\.0e-16\+h2o\*5\.0e-16\+n2\*2\.0e-17/);
+
+  const f = Math.fround;
+  const sodiumKg = f(3.81754e-26);
+  const hydrogenKg = f(f(2.01588) * f(1.6605390666e-27));
+  const underflowedKgProduct = f(f(sodiumKg * hydrogenKg) / f(sodiumKg + hydrogenKg));
+  const reducedAmu = f(f(f(22.98976928) * f(2.01588)) / f(f(22.98976928) + f(2.01588)));
+  const stableReducedMassKg = f(reducedAmu * f(1.6605390666e-27));
+  assert.equal(underflowedKgProduct, 0, 'kg-by-kg f32 arithmetic must reproduce the original WGSL underflow');
+  assert.ok(stableReducedMassKg > 0 && Number.isFinite(stableReducedMassKg));
+});
+
+test('GPU inspection rejects non-finite state instead of presenting NaN diagnostics', async () => {
+  const js = await readFile(new URL('app.js', root), 'utf8');
+  assert.match(js, /invalidStateIndex/);
+  assert.match(js, /Non-finite GPU state at cell/);
+  assert.match(js, /inspect\(\)\.catch\(fail\)/);
 });
 
 test('reactor builder separates restart controls from live operating controls', async () => {
