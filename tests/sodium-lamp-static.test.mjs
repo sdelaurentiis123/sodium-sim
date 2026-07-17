@@ -16,6 +16,9 @@ test('sodium lamp is a base-path-safe static application', async () => {
   assert.equal(new Set(ids).size,ids.length,'every DOM id must be unique');
   assert.match(html, /class="run-summary"/);
   assert.match(html, /class="engineering-details"/);
+  assert.match(html, /conversion feasibility · no component stacking/);
+  assert.match(html, /id="generator-eff-current"/);
+  assert.match(html, /CIE \+ Lambertian check/);
 });
 
 test('GPU source contains explicit D1/D2 non-LTE kinetics and no LTE closure', async () => {
@@ -51,6 +54,7 @@ test('GPU source contains explicit D1/D2 non-LTE kinetics and no LTE closure', a
   assert.match(js, /sapphireThermalAssessment/);
   assert.match(js, /escapeByGroup/);
   assert.match(js, /maxTextureDimension2D/);
+  assert.match(js, /conversionFeasibility/);
 });
 
 test('reactor builder separates restart controls from live operating controls', async () => {

@@ -26,6 +26,14 @@ SODIUM_D_ENERGY_EV = 2.1035
 CIE_V_589 = 0.769_154_7
 MAX_PHOTOPIC_LUMINOUS_EFFICACY_LM_W = 683.0
 
+# Public component results and targets. They remain separate because the
+# reported optical, electrical, and cell-efficiency peaks were not simultaneous.
+PUBLIC_LARGE_CELL_PV_EFFICIENCY = 0.35
+PUBLIC_SMALL_LASER_CELL_PV_EFFICIENCY = 0.44
+ASPIRATIONAL_PV_EFFICIENCY = 0.60
+TARGET_WIRE_TO_WIRE_EFFICIENCY = 0.40
+REFERENCE_ELECTROLYZER_EFFICIENCY = 0.80
+
 
 @dataclass(frozen=True)
 class AntoineFit:
@@ -133,6 +141,50 @@ def sodium_3p_lte_fraction(
     return ratio / (1.0 + ratio)
 
 
+def conversion_feasibility_benchmark(
+    *,
+    wire_to_wire_target: float = TARGET_WIRE_TO_WIRE_EFFICIENCY,
+    electrolyzer_efficiency: float = REFERENCE_ELECTROLYZER_EFFICIENCY,
+) -> dict:
+    """Expose the fuel-to-PV-light burden implied by the public target."""
+
+    if not 0 < wire_to_wire_target <= 1:
+        raise ValueError("wire_to_wire_target must be between zero and one")
+    if not 0 < electrolyzer_efficiency <= 1:
+        raise ValueError("electrolyzer_efficiency must be between zero and one")
+
+    generator_target = wire_to_wire_target / electrolyzer_efficiency
+
+    def scenario(name: str, pv_efficiency: float) -> dict:
+        required = generator_target / pv_efficiency
+        return {
+            "name": name,
+            "pv_efficiency": pv_efficiency,
+            "required_fuel_to_pv_light_efficiency": required,
+            "physically_possible_before_other_losses": required <= 1,
+        }
+
+    return {
+        "wire_to_wire_target": wire_to_wire_target,
+        "electrolyzer_efficiency": electrolyzer_efficiency,
+        "implied_hydrogen_to_electric_target": generator_target,
+        "scenarios": {
+            "large_cell_public": scenario(
+                "public 2 cm large-cell result",
+                PUBLIC_LARGE_CELL_PV_EFFICIENCY,
+            ),
+            "small_laser_cell_public": scenario(
+                "public 1 mm laser-cell result",
+                PUBLIC_SMALL_LASER_CELL_PV_EFFICIENCY,
+            ),
+            "future_cell": scenario(
+                "aspirational future cell",
+                ASPIRATIONAL_PV_EFFICIENCY,
+            ),
+        },
+    }
+
+
 def public_experiment_benchmark() -> dict:
     """Assemble the current public-data benchmark at the reported peak."""
 
@@ -175,6 +227,7 @@ def public_experiment_benchmark() -> dict:
             pressure_bar=1.4,
             inlet_temperature_k=320.0,
         ),
+        "conversion_feasibility": conversion_feasibility_benchmark(),
         "salt_vapor_pressure": {
             "at_1200_c": {
                 "NaCl": antoine_vapor_pressure_bar(1473.15, NACL_ANTOINE),

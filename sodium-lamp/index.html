@@ -143,7 +143,8 @@
             <div><span>Cantera stoich T<sub>ad</sub></span><strong id="reference-tad">—</strong></div>
             <div><span>peak gas / T<sub>ad</sub></span><strong id="reference-temperature-ratio">—</strong></div>
             <div><span>D-line wall exitance</span><strong id="reference-exitance">—</strong></div>
-            <div><span>public peak comparator</span><strong>6.7 kW m⁻²</strong></div>
+            <div><span>reported peak</span><strong>6.7 kW m⁻²</strong></div>
+            <div><span>CIE + Lambertian check</span><strong>4.00 kW m⁻²</strong></div>
             <p id="reference-status">Cantera and public-observable checks pending…</p>
           </div>
 
@@ -222,7 +223,7 @@
             <div><dt>unconverted fuel proxy</dt><dd id="unburned-power">—</dd></div>
             <div><dt>accepted Na pump</dt><dd id="atomic-pump-power">—</dd></div>
             <div><dt>D-line incident at boundary</dt><dd id="boundary-line-power">—</dd></div>
-            <div><dt>D-line power to PV</dt><dd id="pv-line-power">—</dd></div>
+            <div><dt>D-line absorbed by PV</dt><dd id="pv-line-power">—</dd></div>
             <div><dt>collisional return to heat</dt><dd id="quench-heat">—</dd></div>
             <div><dt>parasitic optical absorption</dt><dd id="parasitic-light">—</dd></div>
             <div><dt>outer thermal loss</dt><dd id="boundary-heat">—</dd></div>
@@ -230,6 +231,25 @@
             <div><dt>stored-energy rate</dt><dd id="storage-rate">—</dd></div>
             <div class="residual"><dt>closure residual</dt><dd id="energy-residual">—</dd></div>
           </dl>
+        </div>
+
+        <div class="conversion-gate" aria-label="Fuel to light to electricity feasibility gate">
+          <div class="gate-head">
+            <h3>conversion feasibility · no component stacking</h3>
+            <output id="evidence-status">UNCALIBRATED MODEL</output>
+          </div>
+          <div class="gate-live">
+            <div><span>PV-absorbed D-line / fuel</span><strong id="line-fuel-efficiency">—</strong></div>
+            <div><span>electric at public 35% large-cell η</span><strong id="pv-electric-current">—</strong></div>
+            <div><span>modeled H₂ → electric</span><strong id="generator-eff-current">—</strong></div>
+          </div>
+          <p class="gate-target">A 40% wire-to-wire target with an 80% electrolyzer requires a 50% H₂ → electric generator. Required fuel → PV-absorbed D-line power:</p>
+          <div class="gate-scenarios">
+            <div class="impossible"><span>35% large cell</span><strong id="required-light-large">—</strong><small>impossible before other losses</small></div>
+            <div class="impossible"><span>44% 1 mm laser cell</span><strong id="required-light-laser">—</strong><small>impossible before other losses</small></div>
+            <div><span>60% future cell</span><strong id="required-light-future">—</strong><small>still requires exceptional fuel → light</small></div>
+          </div>
+          <p class="gate-note">The public ~100 W optical, 10 W integrated electrical, and cell-efficiency peaks came from different operating points. This panel never multiplies them together.</p>
         </div>
       </div>
 

@@ -15,11 +15,45 @@ export const CONSTANTS = Object.freeze({
 });
 
 export const PUBLIC_BENCHMARK = Object.freeze({
+  reportedLineExitanceWM2: 6700,
+  cieLambertianLineExitanceWM2: 4005,
   lineExitanceWM2: 6700,
   integratedLinePowerW: 100,
+  integratedElectricPowerW: 10,
+  largeCellPvEfficiency: 0.35,
+  smallLaserCellPvEfficiency: 0.44,
+  futurePvEfficiency: 0.60,
+  wireToWireTarget: 0.40,
+  referenceElectrolyzerEfficiency: 0.80,
   wallTemperatureKRange: Object.freeze([1673.15, 1873.15]),
-  scope: 'Public peak report; NaI brightest run, with stated measurement uncertainty',
+  scope: 'Public component peaks were not simultaneous; NaI brightest run has stated measurement uncertainty',
 });
+
+export function conversionFeasibility({
+  fuelInputW,
+  pvOpticalW,
+  generatorTarget = PUBLIC_BENCHMARK.wireToWireTarget / PUBLIC_BENCHMARK.referenceElectrolyzerEfficiency,
+} = {}) {
+  const fuel = Math.max(0, Number(fuelInputW) || 0);
+  const optical = Math.max(0, Number(pvOpticalW) || 0);
+  const target = Math.max(0, Number(generatorTarget) || 0);
+  const scenarios = Object.fromEntries([
+    ['largeCell', PUBLIC_BENCHMARK.largeCellPvEfficiency],
+    ['smallLaserCell', PUBLIC_BENCHMARK.smallLaserCellPvEfficiency],
+    ['futureCell', PUBLIC_BENCHMARK.futurePvEfficiency],
+  ].map(([name, pvEfficiency]) => [name, {
+    pvEfficiency,
+    electricPowerW: optical * pvEfficiency,
+    generatorEfficiency: fuel > 0 ? optical * pvEfficiency / fuel : 0,
+    requiredFuelToPvLightEfficiency: target / pvEfficiency,
+    possibleBeforeOtherLosses: target / pvEfficiency <= 1,
+  }]));
+  return {
+    generatorTarget: target,
+    pvOpticalToFuelEfficiency: fuel > 0 ? optical / fuel : 0,
+    scenarios,
+  };
+}
 
 // Na(3p) de-excitation coefficients used by the browser model.  H2 is anchored
 // to the 1500--2500 K flame measurements of Krause et al. (~7--9 A^2); the

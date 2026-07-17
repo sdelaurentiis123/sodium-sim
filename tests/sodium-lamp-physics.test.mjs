@@ -29,8 +29,21 @@ import {
   coaxialShearRateProxy,
   sapphireThermalAssessment,
   burnerLipFlameHolderActivity,
+  conversionFeasibility,
   reducedBurnerCellStep,
 } from '../sodium-lamp/physics.js';
+
+test('conversion feasibility separates optical power from electrical power', () => {
+  const audit=conversionFeasibility({fuelInputW:1000,pvOpticalW:200});
+  assert.equal(audit.pvOpticalToFuelEfficiency,.2);
+  assert.equal(audit.scenarios.largeCell.electricPowerW,70);
+  assert.equal(audit.scenarios.largeCell.generatorEfficiency,.07);
+  assert.ok(audit.scenarios.largeCell.requiredFuelToPvLightEfficiency > 1.4);
+  assert.equal(audit.scenarios.largeCell.possibleBeforeOtherLosses,false);
+  assert.ok(audit.scenarios.smallLaserCell.requiredFuelToPvLightEfficiency > 1);
+  assert.ok(audit.scenarios.futureCell.requiredFuelToPvLightEfficiency > .83);
+  assert.equal(audit.scenarios.futureCell.possibleBeforeOtherLosses,true);
+});
 
 test('metered hydrogen flow produces conservative nozzle and LHV diagnostics', () => {
   const base=hydrogenNozzleState({flowSLPM:56,nozzleDiameterM:.004,pressurePa:1.4e5,temperatureK:320});

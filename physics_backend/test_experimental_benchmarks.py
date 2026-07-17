@@ -1,7 +1,10 @@
+import pytest
+
 from experimental_benchmarks import (
     NACL_ANTOINE,
     NAI_ANTOINE,
     antoine_vapor_pressure_bar,
+    conversion_feasibility_benchmark,
     cylinder_lateral_area_m2,
     narrowband_lambertian_exitance_w_m2,
     photon_rate_for_power,
@@ -59,3 +62,22 @@ def test_public_report_includes_reference_chemistry_and_measurement_warning() ->
         "na_o_o_partial_pump_rate_per_na_s"
     ] > 1_000
     assert "2x" in report["reported"]["measurement_warning"]
+
+
+def test_wire_to_wire_target_exposes_required_fuel_to_light_burden() -> None:
+    burden = conversion_feasibility_benchmark()
+    assert burden["implied_hydrogen_to_electric_target"] == pytest.approx(0.5)
+    scenarios = burden["scenarios"]
+    assert scenarios["large_cell_public"][
+        "required_fuel_to_pv_light_efficiency"
+    ] == pytest.approx(0.5 / 0.35)
+    assert not scenarios["large_cell_public"][
+        "physically_possible_before_other_losses"
+    ]
+    assert not scenarios["small_laser_cell_public"][
+        "physically_possible_before_other_losses"
+    ]
+    assert scenarios["future_cell"][
+        "required_fuel_to_pv_light_efficiency"
+    ] == pytest.approx(0.5 / 0.60)
+    assert scenarios["future_cell"]["physically_possible_before_other_losses"]
