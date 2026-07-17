@@ -30,6 +30,7 @@ import {
   sapphireThermalAssessment,
   burnerLipFlameHolderActivity,
   conversionFeasibility,
+  sodiumRadicalCycleDiagnostic,
   reducedBurnerCellStep,
 } from '../sodium-lamp/physics.js';
 
@@ -43,6 +44,17 @@ test('conversion feasibility separates optical power from electrical power', () 
   assert.ok(audit.scenarios.smallLaserCell.requiredFuelToPvLightEfficiency > 1);
   assert.ok(audit.scenarios.futureCell.requiredFuelToPvLightEfficiency > .83);
   assert.equal(audit.scenarios.futureCell.possibleBeforeOtherLosses,true);
+});
+
+test('measured Na-NaOH cycle exposes radical-inhibition burden without a closure', () => {
+  const inputs={temperatureK:2000,pressurePa:1.4e5,hydrogenAtomMoleFraction:.02,hydroxylMoleFraction:.05,nitrogenMoleFraction:.3};
+  const base=sodiumRadicalCycleDiagnostic({...inputs,sodiumMoleFraction:80e-6});
+  const doubled=sodiumRadicalCycleDiagnostic({...inputs,sodiumMoleFraction:160e-6});
+  assert.ok(base.cycleRatePerSodiumS > 0);
+  assert.ok(base.naohPoolFraction > 0 && base.naohPoolFraction < 1);
+  assert.ok(base.hydrogenInventoryTimeS < base.hydroxylInventoryTimeS);
+  assert.ok(Math.abs(doubled.radicalSinkDensityM3S/base.radicalSinkDensityM3S-2) < 1e-12);
+  assert.match(base.scope,/diagnostic only/);
 });
 
 test('metered hydrogen flow produces conservative nozzle and LHV diagnostics', () => {

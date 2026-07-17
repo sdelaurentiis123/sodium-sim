@@ -9,6 +9,7 @@ from experimental_benchmarks import (
     narrowband_lambertian_exitance_w_m2,
     photon_rate_for_power,
     public_experiment_benchmark,
+    sodium_radical_cycle_diagnostic,
     sodium_3p_lte_fraction,
 )
 
@@ -81,3 +82,32 @@ def test_wire_to_wire_target_exposes_required_fuel_to_light_burden() -> None:
         "required_fuel_to_pv_light_efficiency"
     ] == pytest.approx(0.5 / 0.60)
     assert scenarios["future_cell"]["physically_possible_before_other_losses"]
+
+
+def test_sodium_radical_cycle_is_catalytic_and_inventory_limited() -> None:
+    inputs = {
+        "temperature_k": 2000,
+        "pressure_pa": 1.4e5,
+        "hydrogen_atom_mole_fraction": 0.02,
+        "hydroxyl_mole_fraction": 0.05,
+        "nitrogen_mole_fraction": 0.3,
+    }
+    result = sodium_radical_cycle_diagnostic(
+        sodium_mole_fraction=80e-6,
+        **inputs,
+    )
+    assert 0 < result["naoh_pool_fraction"] < 1
+    assert result["cycle_rate_per_sodium_s"] > 0
+    assert result["cycle_time_s"] > 0
+    assert result["hydrogen_inventory_time_s"] < result["hydroxyl_inventory_time_s"]
+
+    doubled = sodium_radical_cycle_diagnostic(
+        sodium_mole_fraction=160e-6,
+        **inputs,
+    )
+    assert doubled["radical_sink_density_m3_s"] == pytest.approx(
+        2 * result["radical_sink_density_m3_s"]
+    )
+    assert doubled["hydrogen_inventory_time_s"] == pytest.approx(
+        result["hydrogen_inventory_time_s"] / 2
+    )

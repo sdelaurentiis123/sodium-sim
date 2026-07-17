@@ -34,6 +34,12 @@ ASPIRATIONAL_PV_EFFICIENCY = 0.60
 TARGET_WIRE_TO_WIRE_EFFICIENCY = 0.40
 REFERENCE_ELECTROLYZER_EFFICIENCY = 0.80
 
+# Gomez Martin et al., J. Phys. Chem. A 121 (2017) 7667--7674.
+# The termolecular value is specific to N2 as the third body. Unit conversion:
+# cm3 -> 1e-6 m3 and cm6 -> 1e-12 m6.
+NAOH_H_RATE_M3_MOLECULE_S = 3.8e-17
+NA_OH_N2_RATE_300K_M6_MOLECULE2_S = 2.7e-41
+
 
 @dataclass(frozen=True)
 class AntoineFit:
@@ -182,6 +188,72 @@ def conversion_feasibility_benchmark(
                 ASPIRATIONAL_PV_EFFICIENCY,
             ),
         },
+    }
+
+
+def sodium_radical_cycle_diagnostic(
+    *,
+    temperature_k: float,
+    pressure_pa: float,
+    sodium_mole_fraction: float,
+    hydrogen_atom_mole_fraction: float,
+    hydroxyl_mole_fraction: float,
+    nitrogen_mole_fraction: float,
+) -> dict:
+    """Screen the measured Na/NaOH catalytic radical-removal cycle.
+
+    The two reactions are Na + OH + N2 -> NaOH + N2 and
+    NaOH + H -> Na + H2O. Radical fractions should come from an independent
+    detailed-chemistry reference; they are not fed back into the flame solve.
+    """
+
+    if temperature_k <= 0 or pressure_pa <= 0:
+        raise ValueError("temperature and pressure must be positive")
+    fractions = (
+        sodium_mole_fraction,
+        hydrogen_atom_mole_fraction,
+        hydroxyl_mole_fraction,
+        nitrogen_mole_fraction,
+    )
+    if any(value < 0 or value > 1 for value in fractions):
+        raise ValueError("mole fractions must be between zero and one")
+
+    number_density_m3 = pressure_pa / (KB_J_K * temperature_k)
+    hydrogen_density_m3 = hydrogen_atom_mole_fraction * number_density_m3
+    hydroxyl_density_m3 = hydroxyl_mole_fraction * number_density_m3
+    nitrogen_density_m3 = nitrogen_mole_fraction * number_density_m3
+    sodium_pool_density_m3 = sodium_mole_fraction * number_density_m3
+    na_to_naoh_rate_s = (
+        NA_OH_N2_RATE_300K_M6_MOLECULE2_S
+        * (300.0 / temperature_k) ** 1.2
+        * hydroxyl_density_m3
+        * nitrogen_density_m3
+    )
+    naoh_to_na_rate_s = NAOH_H_RATE_M3_MOLECULE_S * hydrogen_density_m3
+    rate_sum = na_to_naoh_rate_s + naoh_to_na_rate_s
+    naoh_pool_fraction = na_to_naoh_rate_s / rate_sum if rate_sum else 0.0
+    cycle_rate_per_sodium_s = (
+        na_to_naoh_rate_s * naoh_to_na_rate_s / rate_sum if rate_sum else 0.0
+    )
+    radical_sink_density_m3_s = sodium_pool_density_m3 * cycle_rate_per_sodium_s
+
+    def inventory_time(inventory_m3: float) -> float:
+        return inventory_m3 / radical_sink_density_m3_s if radical_sink_density_m3_s else float("inf")
+
+    return {
+        "number_density_m3": number_density_m3,
+        "na_to_naoh_rate_s": na_to_naoh_rate_s,
+        "naoh_to_na_rate_s": naoh_to_na_rate_s,
+        "naoh_pool_fraction": naoh_pool_fraction,
+        "cycle_rate_per_sodium_s": cycle_rate_per_sodium_s,
+        "cycle_time_s": 1.0 / cycle_rate_per_sodium_s if cycle_rate_per_sodium_s else float("inf"),
+        "radical_sink_density_m3_s": radical_sink_density_m3_s,
+        "hydrogen_inventory_time_s": inventory_time(hydrogen_density_m3),
+        "hydroxyl_inventory_time_s": inventory_time(hydroxyl_density_m3),
+        "scope": (
+            "N2 third-body channel with unperturbed reference H/OH; "
+            "burden screen only, not a coupled inhibited-flame prediction"
+        ),
     }
 
 

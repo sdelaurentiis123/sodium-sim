@@ -52,6 +52,7 @@ test('GPU source contains explicit D1/D2 non-LTE kinetics and no LTE closure', a
   assert.match(js, /resolvedSodiumSpectrum/);
   assert.match(js, /canteraOperatingReference/);
   assert.match(js, /sapphireThermalAssessment/);
+  assert.match(js, /sodiumRadicalCycleDiagnostic/);
   assert.match(js, /escapeByGroup/);
   assert.match(js, /maxTextureDimension2D/);
   assert.match(js, /conversionFeasibility/);
@@ -69,6 +70,8 @@ test('reactor builder separates restart controls from live operating controls', 
   assert.match(html, /id="wall-detail"/);
   assert.match(html, /id="reference-tad"/);
   assert.match(html, /id="reference-exitance"/);
+  assert.match(html, /Na \/ NaOH flame-coupling screen/);
+  assert.match(html, /id="radical-cycle-time"/);
   assert.match(html, /id="spectrum-reversal"/);
   assert.match(html, /id="simulation-mode"/);
   assert.match(html, /id="peak-gas-temperature"/);

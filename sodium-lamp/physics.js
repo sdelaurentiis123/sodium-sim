@@ -101,6 +101,50 @@ export function neutralSodiumFraction({ temperatureK, equivalenceRatio = 1, salt
   return Math.max(0, Math.min(1, activityScale * thermal * richBoost));
 }
 
+export const SODIUM_RADICAL_CYCLE = Object.freeze({
+  naohPlusHRateM3s: 3.8e-17,
+  naPlusOhPlusN2RateAt300KM6s: 2.7e-41,
+  source: 'Gomez Martin et al., J. Phys. Chem. A 121 (2017) 7667-7674',
+});
+
+export function sodiumRadicalCycleDiagnostic({
+  temperatureK,
+  pressurePa,
+  sodiumMoleFraction,
+  hydrogenAtomMoleFraction,
+  hydroxylMoleFraction,
+  nitrogenMoleFraction,
+}) {
+  const temperature = Math.max(1, Number(temperatureK) || 0);
+  const pressure = Math.max(0, Number(pressurePa) || 0);
+  const fraction = (value) => Math.max(0, Math.min(1, Number(value) || 0));
+  const numberDensityM3 = pressure / (CONSTANTS.kB * temperature);
+  const hydrogenDensityM3 = fraction(hydrogenAtomMoleFraction) * numberDensityM3;
+  const hydroxylDensityM3 = fraction(hydroxylMoleFraction) * numberDensityM3;
+  const nitrogenDensityM3 = fraction(nitrogenMoleFraction) * numberDensityM3;
+  const sodiumPoolDensityM3 = fraction(sodiumMoleFraction) * numberDensityM3;
+  const naToNaohRateS = SODIUM_RADICAL_CYCLE.naPlusOhPlusN2RateAt300KM6s
+    * (300 / temperature) ** 1.2 * hydroxylDensityM3 * nitrogenDensityM3;
+  const naohToNaRateS = SODIUM_RADICAL_CYCLE.naohPlusHRateM3s * hydrogenDensityM3;
+  const rateSum = naToNaohRateS + naohToNaRateS;
+  const naohPoolFraction = rateSum > 0 ? naToNaohRateS / rateSum : 0;
+  const cycleRatePerSodiumS = rateSum > 0 ? naToNaohRateS * naohToNaRateS / rateSum : 0;
+  const radicalSinkDensityM3S = sodiumPoolDensityM3 * cycleRatePerSodiumS;
+  const inventoryTime = (density) => radicalSinkDensityM3S > 0 ? density / radicalSinkDensityM3S : Infinity;
+  return {
+    numberDensityM3,
+    naToNaohRateS,
+    naohToNaRateS,
+    naohPoolFraction,
+    cycleRatePerSodiumS,
+    cycleTimeS: cycleRatePerSodiumS > 0 ? 1 / cycleRatePerSodiumS : Infinity,
+    radicalSinkDensityM3S,
+    hydrogenInventoryTimeS: inventoryTime(hydrogenDensityM3),
+    hydroxylInventoryTimeS: inventoryTime(hydroxylDensityM3),
+    scope: 'N2 third-body channel with unperturbed Cantera H/OH; diagnostic only, not coupled',
+  };
+}
+
 export function thermalUpwardRate(downwardRateS, temperatureK, line = CONSTANTS.lines.D2) {
   return downwardRateS * line.degeneracyRatio * Math.exp(-(line.energyEV * CONSTANTS.eV) / (CONSTANTS.kB * temperatureK));
 }
