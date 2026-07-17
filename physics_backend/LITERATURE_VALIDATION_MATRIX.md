@@ -49,8 +49,10 @@ The public clips cannot be combined as though they show one evolving machine:
 
 Only the 15 July post supports an insertion animation, and even there the
 undisclosed motion, geometry, and clipped exposure prevent quantitative
-calibration. The simulator should label it as a protocol study rather than a
-reconstruction.
+calibration. The simulator therefore implements it only as an accelerated,
+area-averaged source-engagement protocol at fixed metered H2. Bypassed source
+power remains outside the computational domain; no disclosed geometry, video
+timing, swirl, or recuperator behavior is inferred.
 
 ## Immediate corrections from the literature
 

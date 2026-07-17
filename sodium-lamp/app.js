@@ -22,10 +22,11 @@ import {
   PUBLIC_BENCHMARK,
   conversionFeasibility,
   sodiumRadicalCycleDiagnostic,
+  chamberEngagementProtocol,
 } from './physics.js';
 
 const ids = [
-  'gpu-status','pause','reset','simulation-mode','mode-badge','mode-explanation','volume','volume-field','volume-definition','volume-scale','spectrum-plot',
+  'gpu-status','pause','reset','simulation-mode','operating-protocol','mode-badge','mode-explanation','protocol-status','volume','volume-field','volume-definition','volume-scale','spectrum-plot',
   'departure-big','gas-temperature','peak-gas-temperature','excitation-temperature','optical-depth','d1-pop','d2-pop','ground-pop',
   'solved-bar','lte-bar','solved-population','lte-population','reabsorptions','escape-probability','residence-time',
   'flow-pump','flow-abs','flow-emit','flow-quench','flow-pump-value','flow-abs-value','flow-emit-value','flow-quench-value',
@@ -47,13 +48,28 @@ const NX = 64, NZ = 112, FLOATS = 16, CHEMISTRY_RATE_S = 4e4;
 // step below retains ten radiation sweeps per physical step for validation.
 const LIVE_STEPS_PER_FRAME = 3, LIVE_RADIATION_SWEEPS = 6;
 const stateBytes = NX * NZ * FLOATS * 4;
-const P = Object.freeze({NX:0,NZ:1,R:2,L:3,RC:4,TW:5,PRESSURE:6,POWER:7,O2:8,NA:9,REFLECT:10,PV:11,ETA:12,QSCALE:13,SPEED:14,TIME:15,DT:16,SALT:17,AMBIENT:18,RESERVED:19,PHI:20,NOZZLE:21,INSERTION:22,COFLOW:23,OXNOZZLE:24,RETURN:25,TMAX:26,STABILIZED:27});
-const params = new Float32Array(28);
-Object.assign(params, {[P.NX]:NX,[P.NZ]:NZ,[P.R]:.038,[P.L]:.105,[P.RC]:.020,[P.TW]:.003,[P.PRESSURE]:1.4e5,[P.POWER]:10.1,[P.O2]:.38,[P.NA]:80,[P.REFLECT]:.08,[P.PV]:.84,[P.ETA]:.01,[P.QSCALE]:1,[P.SPEED]:50,[P.TIME]:0,[P.DT]:2e-5,[P.SALT]:0,[P.AMBIENT]:320,[P.RESERVED]:0,[P.PHI]:1,[P.NOZZLE]:.004,[P.INSERTION]:.006,[P.COFLOW]:.7,[P.OXNOZZLE]:.008,[P.RETURN]:.8,[P.TMAX]:2850,[P.STABILIZED]:1});
+const P = Object.freeze({NX:0,NZ:1,R:2,L:3,RC:4,TW:5,PRESSURE:6,POWER:7,O2:8,NA:9,REFLECT:10,PV:11,ETA:12,QSCALE:13,SPEED:14,TIME:15,DT:16,SALT:17,AMBIENT:18,RESERVED:19,PHI:20,NOZZLE:21,INSERTION:22,COFLOW:23,OXNOZZLE:24,RETURN:25,TMAX:26,STABILIZED:27,CAPTURE:28});
+const params = new Float32Array(29);
+Object.assign(params, {[P.NX]:NX,[P.NZ]:NZ,[P.R]:.038,[P.L]:.105,[P.RC]:.020,[P.TW]:.003,[P.PRESSURE]:1.4e5,[P.POWER]:10.1,[P.O2]:.38,[P.NA]:80,[P.REFLECT]:.08,[P.PV]:.84,[P.ETA]:.01,[P.QSCALE]:1,[P.SPEED]:50,[P.TIME]:0,[P.DT]:2e-5,[P.SALT]:0,[P.AMBIENT]:320,[P.RESERVED]:0,[P.PHI]:1,[P.NOZZLE]:.004,[P.INSERTION]:.006,[P.COFLOW]:.7,[P.OXNOZZLE]:.008,[P.RETURN]:.8,[P.TMAX]:2850,[P.STABILIZED]:1,[P.CAPTURE]:1});
 let volumeMode = 4, orbit = -.72, pitch = .18, paused = false, dragging = false, lastX = 0, lastY = 0;
 let initializeGPU = null, designPending = false, previousEnergy = null, previousEnergyTime = null, runNumber = 0;
 let nozzleState = null, coflowState = null, returnState = null, openAirReferenceM = 0;
 let operatingReference = null, shearRateProxyS = 0;
+let engagementState = chamberEngagementProtocol();
+
+function updateEngagementState() {
+  engagementState = chamberEngagementProtocol({
+    timeS: params[P.TIME],
+    mode: ui['operating-protocol'].value,
+  });
+  params[P.CAPTURE] = engagementState.capturedFraction;
+  const percent = Math.round(100 * engagementState.capturedFraction);
+  ui['protocol-status'].value = engagementState.mode === 'steady'
+    ? 'FULL CHAMBER CAPTURE'
+    : `${engagementState.phase} · ${percent}% CAPTURED · H₂ METER FIXED`;
+  ui['protocol-status'].className = engagementState.phase === 'CAPTURED' ? '' : 'entering';
+  return engagementState;
+}
 
 function readControls({commitDesign = false} = {}) {
   const pendingDesign = {
@@ -91,6 +107,7 @@ function readControls({commitDesign = false} = {}) {
   params[P.COFLOW] = coflowState.velocityMS;
   params[P.RETURN] = returnState.velocityMS;
   params[P.STABILIZED] = ui['simulation-mode'].value === 'stable' ? 1 : 0;
+  updateEngagementState();
   operatingReference=canteraOperatingReference({
     equivalenceRatio:params[P.PHI],
     oxygenFraction:params[P.O2],
@@ -132,9 +149,13 @@ function readControls({commitDesign = false} = {}) {
   const stabilized=params[P.STABILIZED]>.5;
   ui['mode-badge'].textContent=stabilized?'STABILIZED REFERENCE':'UNFORCED TRANSIENT';
   ui['mode-badge'].className=stabilized?'':'warning';
-  ui['mode-explanation'].textContent=stabilized
+  const branchExplanation=stabilized
     ? 'A mesh-resolved burner-lip holder enables chemistry but adds no heat. The flame persists only while transported H₂ and O₂ are consumed.'
     : 'A finite hot kernel is applied once, with no continuing holder. Fresh flow can carry it downstream, so survival or blowoff is an output.';
+  const protocolExplanation=engagementState.mode==='july15'
+    ? ' The chamber source is area-averaged from bypassed to captured at fixed metered H₂. This accelerates the fluid response and does not reconstruct the video geometry or timing.'
+    : ' The source is fully engaged from t=0.';
+  ui['mode-explanation'].textContent=branchExplanation+protocolExplanation;
   const descriptions = [
     'Color + opacity = spontaneous D1 + D2 emissivity from the solved 3p populations.',
     'Color = dimensional gas and solid temperature; the sapphire wall is part of the thermal solve.',
@@ -153,6 +174,16 @@ for (const id of ['fuel-flow','oxidizer-flow','oxygen','volume-field']) {
   ui[id].addEventListener('input', () => readControls());
 }
 ui['simulation-mode'].addEventListener('change',()=>{
+  if(ui['simulation-mode'].value==='transient'&&ui['operating-protocol'].value==='july15')ui['operating-protocol'].value='steady';
+  readControls({commitDesign:true});
+  initializeGPU?.();
+});
+ui['operating-protocol'].addEventListener('change',()=>{
+  if(ui['operating-protocol'].value==='july15'){
+    ui['simulation-mode'].value='stable';
+    ui.preset.value='nacl';
+    params[P.SALT]=0;
+  }
   readControls({commitDesign:true});
   initializeGPU?.();
 });
@@ -173,6 +204,7 @@ for (const input of document.querySelectorAll('[data-control-kind="design"]')) {
 }
 ui.preset.addEventListener('change', () => {
   const preset = ui.preset.value;
+  if(preset!=='nacl'&&ui['operating-protocol'].value==='july15')ui['operating-protocol'].value='steady';
   if (preset === 'nai') {
     ui.sodium.value = 130; ui.oxygen.value = 80; ui.pressure.value = 1.2; params[P.SALT] = 1;
   } else if (preset === 'hps') {
@@ -184,6 +216,9 @@ ui.preset.addEventListener('change', () => {
   initializeGPU?.();
 });
 
+// CAPTURE scales area-averaged inlet scalars while the active-fraction core
+// velocity remains dimensional, so admitted scalar flux is linear—not
+// quadratic—in engagement. The bulk return velocity scales with captured flow.
 const WGSL = /* wgsl */`
 const PI:f32=3.14159265359;const C:f32=2.99792458e8;const KB:f32=1.380649e-23;const EV:f32=1.602176634e-19;const EN:f32=2.1035*EV;const MNA:f32=3.81754e-26;const KCHEM:f32=4e4;
 const A1:f32=6.14e7;const A2:f32=6.16e7;const G1:f32=1.;const G2:f32=2.;const F1:f32=.320;const F2:f32=.641;const L1:f32=5.895924e-7;const L2:f32=5.889950e-7;
@@ -194,10 +229,10 @@ fn material(r:f32,z:f32)->f32{let innerWall=z>.10*p[3]&&z<.90*p[3]&&r>=p[4]&&r<p
 fn thermalK(c:Cell)->f32{let m=c.a.w;return select(select(.18,.12,m>1.5),max(4.5,35.*pow(300./max(c.a.x,300.),.78)),m>.5&&m<1.5);}
 fn harmonicK(a:f32,b:f32)->f32{return 2.*a*b/max(a+b,1e-8);}
 fn flameShape(r:f32,z:f32)->f32{if(r>=p[4]||z<=p[22]||z>=.94*p[3]){return 0.;}let span=max(.01,.94*p[3]-p[22]);let axial=pow(max(0.,sin(PI*(z-p[22])/span)),.7);let jetRadius=.5*p[21]+.10*(z-p[22]);let sheetRadius=.70*jetRadius;let sheetWidth=max(.0007,.35*jetRadius);return axial*exp(-pow((r-sheetRadius)/sheetWidth,2.));}
-fn flameHolder(r:f32,z:f32)->f32{let lipR=.5*p[21];let radialWidth=max(max(.00055,.18*p[21]),1.25*p[2]/p[0]);let axialWidth=max(.0028,2.5*p[3]/p[1]);let radial=exp(-pow((r-lipR)/radialWidth,2.));let axial=exp(-pow((z-(p[22]+.0018))/axialWidth,2.));return p[27]*radial*axial;}
+fn flameHolder(r:f32,z:f32)->f32{let lipR=.5*p[21];let radialWidth=max(max(.00055,.18*p[21]),1.25*p[2]/p[0]);let axialWidth=max(.0028,2.5*p[3]/p[1]);let radial=exp(-pow((r-lipR)/radialWidth,2.));let axial=exp(-pow((z-(p[22]+.0018))/axialWidth,2.));return p[27]*p[28]*radial*axial;}
 fn chemistryRate(T:f32,fuel:f32,ox:f32,m:f32,r:f32,z:f32)->f32{let thermal=smoothstep(760.,1120.,T);let activation=max(thermal,.92*flameHolder(r,z));return select(activation*min(max(fuel,0.),max(ox,0.))*KCHEM,0.,m>.5);}
 fn heatFromReaction(z:f32,T:f32,reactionRate:f32,m:f32)->f32{if(z<p[22]||m>.5){return 0.;}let molarDensity=p[6]/(8.314462618*max(T,300.));return molarDensity*max(reactionRate,0.)*241800.;}
-fn flow(r:f32,z:f32,m:f32)->vec2<f32>{if(m>.5&&m<1.5){return vec2(0.);}let y=z/p[3];let top=smoothstep(.76,.96,y);if(m<.5){let rn=.5*p[21];let ro=.5*p[24];let zr=max(z-p[22],0.);let rj=rn+.10*zr;let jet=exp(-pow(r/max(rj,.0002),2.));let decay=pow(rn/max(rj,rn),2.);let enabled=select(0.,1.,z>=p[22]);let edge=max(.00020,.10*(ro-rn));let annulus=smoothstep(rn,rn+edge,r)*(1.-smoothstep(ro-edge,ro,r));let axial=enabled*(p[14]*decay*jet+p[23]*annulus);let entrain=-enabled*.08*p[14]*decay*(r/max(rj,.0002))*jet;let turn=.28*top*max(axial,p[23])*r/max(p[4],.001);return vec2(entrain+turn,axial*(1.-.85*top));}let a=p[4]+p[5];let b=p[2]-p[5];let rr=clamp((r-a)/max(b-a,1e-4),0.,1.);return vec2(.22*p[25]*top*(1.-rr),-p[25]*(1.-top)*(.6+.4*rr));}
+fn flow(r:f32,z:f32,m:f32)->vec2<f32>{if(m>.5&&m<1.5){return vec2(0.);}let y=z/p[3];let top=smoothstep(.76,.96,y);if(m<.5){let rn=.5*p[21];let ro=.5*p[24];let zr=max(z-p[22],0.);let rj=rn+.10*zr;let jet=exp(-pow(r/max(rj,.0002),2.));let decay=pow(rn/max(rj,rn),2.);let enabled=select(0.,1.,z>=p[22]);let edge=max(.00020,.10*(ro-rn));let annulus=smoothstep(rn,rn+edge,r)*(1.-smoothstep(ro-edge,ro,r));let axial=enabled*(p[14]*decay*jet+p[23]*annulus);let entrain=-enabled*.08*p[14]*decay*(r/max(rj,.0002))*jet;let turn=.28*top*max(axial,p[23])*r/max(p[4],.001);return vec2(entrain+turn,axial*(1.-.85*top));}let a=p[4]+p[5];let b=p[2]-p[5];let rr=clamp((r-a)/max(b-a,1e-4),0.,1.);return p[28]*vec2(.22*p[25]*top*(1.-rr),-p[25]*(1.-top)*(.6+.4*rr));}
 fn sample(pos:vec2<f32>,m:f32)->Cell{let dr=p[2]/p[0];let dz=p[3]/p[1];let q=clamp(vec2(pos.x/dr-.5,pos.y/dz-.5),vec2(0.),vec2(p[0]-1.001,p[1]-1.001));let i=vec2<i32>(floor(q));let f=fract(q);let c00=clampCell(i.x,i.y);let c10=clampCell(i.x+1,i.y);let c01=clampCell(i.x,i.y+1);let c11=clampCell(i.x+1,i.y+1);if(abs(c00.a.w-m)>.4||abs(c10.a.w-m)>.4||abs(c01.a.w-m)>.4||abs(c11.a.w-m)>.4){return c00;}var o:Cell;o.a=mix(mix(c00.a,c10.a,f.x),mix(c01.a,c11.a,f.x),f.y);o.b=mix(mix(c00.b,c10.b,f.x),mix(c01.b,c11.b,f.x),f.y);o.c=mix(mix(c00.c,c10.c,f.x),mix(c01.c,c11.c,f.x),f.y);o.d=mix(mix(c00.d,c10.d,f.x),mix(c01.d,c11.d,f.x),f.y);return o;}
 fn neutralActivity(T:f32,phi:f32)->f32{let mid=select(1180.,980.,p[17]>.5&&p[17]<1.5);let thermal=1./(1.+exp(-(T-mid)/125.));let rich=.35+.65/(1.+exp(-(phi-.9)/.16));return clamp(thermal*rich,0.,1.);}
 fn meanRelSpeed(T:f32,partnerAMU:f32)->f32{let partner=partnerAMU*1.6605390666e-27;let mu=MNA*partner/(MNA+partner);return sqrt(8.*KB*T/(PI*mu));}
@@ -211,9 +246,9 @@ fn photons(c:Cell,line:u32)->f32{return select(c.c.x+c.c.y+c.c.z,c.c.w+c.d.x+c.d
 @compute @workgroup_size(8,8)fn init(@builtin(global_invocation_id)gid:vec3<u32>){
   if(gid.x>=u32(p[0])||gid.y>=u32(p[1])){return;}
   let dr=p[2]/p[0];let dz=p[3]/p[1];let r=(f32(gid.x)+.5)*dr;let z=(f32(gid.y)+.5)*dz;let m=material(r,z);
-  let shape=flameShape(r,z);let seedRise=mix(900.,.88*max(p[26]-p[18],100.),p[27]);var T=select(select(p[18]+seedRise*shape,p[18]+220.,m>1.5),p[18]+120.,m>.5&&m<1.5);
+  let engagement=clamp(p[28],0.,1.);let shape=flameShape(r,z)*engagement;let seedRise=mix(900.,.88*max(p[26]-p[18],100.),p[27]);var T=select(select(p[18]+seedRise*shape,p[18]+220.,m>1.5),p[18]+120.,m>.5&&m<1.5);
   let enabled=select(0.,1.,z>=p[22]);let zr=max(z-p[22],0.);let rj=.5*p[21]+.10*zr;let jet=exp(-pow(r/max(rj,.0003),2.));let outerRadius=.5*p[24]+.08*zr;let outer=exp(-pow(r/max(outerRadius,.0004),4.));let fade=1.-smoothstep(.72,.94,z/p[3]);
-  let fuel=select(jet*fade*enabled,0.,m>.5);let ox=select(max(0.,outer-.94*jet)*fade*enabled/max(p[20],.05),0.,m>.5);let total=select(select(p[9]*1e-6,0.,z<p[22]),0.,m>.5&&m<1.5);
+  let fuel=select(engagement*jet*fade*enabled,0.,m>.5);let ox=select(engagement*max(0.,outer-.94*jet)*fade*enabled/max(p[20],.05),0.,m>.5);let total=select(select(engagement*p[9]*1e-6,0.,z<p[22]),0.,m>.5&&m<1.5);
   let phi=fuel/max(ox,.05);let neutral=total*neutralActivity(T,phi);let react=select(chemistryRate(T,fuel,ox,m,r,z),0.,z<p[22]);
   if(z<p[22]&&m<.5){T=p[18];}
   dst[ix(gid.x,gid.y)]=Cell(vec4(T,total,neutral,m),vec4(1e-12,2e-12,fuel,ox),vec4(0.),vec4(0.,0.,0.,clamp(react/KCHEM,0.,1.)));
@@ -237,9 +272,9 @@ fn photons(c:Cell,line:u32)->f32{return select(c.c.x+c.c.y+c.c.z,c.c.w+c.d.x+c.d
   var fuel=max(0.,adv.b.z+p[16]*dFuel*lapFuel);var ox=max(0.,adv.b.w+p[16]*dOx*lapOx);var water=max(0.,adv.d.z+p[16]*dWater*lapWater);
   let inlet=abs(z-p[22])<=.55*dz&&m<.5;var react=chemistryRate(adv.a.x,fuel,ox,m,r,z);if(inlet||z<p[22]){react=0.;}
   fuel=max(0.,fuel-p[16]*react);ox=max(0.,ox-p[16]*react);water=min(1.,water+p[16]*react);
-  if(inlet){let fuelIn=1.-smoothstep(.45*p[21],.55*p[21],r);let oxIn=smoothstep(.50*p[21],.58*p[21],r)*(1.-smoothstep(.45*p[24],.50*p[24],r));fuel=fuelIn;ox=oxIn/max(p[20],.05);water=0.;}
+  if(inlet){let fuelIn=1.-smoothstep(.45*p[21],.55*p[21],r);let oxIn=smoothstep(.50*p[21],.58*p[21],r)*(1.-smoothstep(.45*p[24],.50*p[24],r));fuel=p[28]*fuelIn;ox=p[28]*oxIn/max(p[20],.05);water=0.;}
   if(z<p[22]&&m<.5){fuel=0.;ox=0.;water=0.;react=0.;}
-  let qchem=heatFromReaction(z,adv.a.x,react,m);var total=select(max(0.,adv.a.y),0.,m>.5&&m<1.5);if(inlet){total=p[9]*1e-6;}if(z<p[22]&&m<.5){total=0.;}
+  let qchem=heatFromReaction(z,adv.a.x,react,m);var total=select(max(0.,adv.a.y),0.,m>.5&&m<1.5);if(inlet){total=p[28]*p[9]*1e-6;}if(z<p[22]&&m<.5){total=0.;}
   let phi=fuel/max(ox,.05);let neutral=total*neutralActivity(adv.a.x,phi);let nna=p[6]/(KB*max(adv.a.x,300.))*neutral;let lower=max(0.,1.-old.b.x-old.b.y);
   let rawPump=min(5e8,p[12]*qchem/max(nna*EN,1e-12));let accepted=rawPump*lower*nna*EN;let qquench=qrate(max(old.a.x,300.),fuel,ox,water)*nna*(old.b.x+old.b.y)*EN;let thermalSource=qchem-accepted+qquench;
   let surfaceFlux=12.*(old.a.x-p[18])+.82*5.670374419e-8*(pow(old.a.x,4.)-pow(p[18],4.));let boundary=select(0.,surfaceFlux*p[2]/(max(r,.5*dr)*dr),gid.x+1u==u32(p[0]));
@@ -367,7 +402,7 @@ async function main() {
   const renderPipeline=await device.createRenderPipelineAsync({layout:renderPipelineLayout,vertex:{module:renderModule,entryPoint:'vs'},fragment:{module:renderModule,entryPoint:'volume',targets:[{format}]},primitive:{topology:'triangle-list'}});
   let current=1,frame=0,reading=false;
   function writeParams(){device.queue.writeBuffer(paramBuffer,0,params);}function compute(pass,pipeline){pass.setPipeline(pipeline);pass.setBindGroup(0,groups[current===0?0:1]);pass.dispatchWorkgroups(Math.ceil(NX/8),Math.ceil(NZ/8));current=1-current;}
-  function initialize(){readControls({commitDesign:true});writeParams();const enc=device.createCommandEncoder(),pass=enc.beginComputePass();pass.setPipeline(pipelines.init);pass.setBindGroup(0,groups[0]);pass.dispatchWorkgroups(Math.ceil(NX/8),Math.ceil(NZ/8));pass.end();device.queue.submit([enc.finish()]);current=1;params[P.TIME]=0;previousEnergy=null;previousEnergyTime=null;window.__lampStats=null;runNumber++;const stabilized=params[P.STABILIZED]>.5;ui['run-number'].value=`run ${runNumber} · ${stabilized?'stabilized branch':'ignition transient'} · t₀`;ui['control-status'].textContent=stabilized?'rebuilding · converging burning branch':'rebuilding · advancing ignition transient';ui['control-status'].className='solving';}
+  function initialize(){params[P.TIME]=0;readControls({commitDesign:true});updateEngagementState();writeParams();const enc=device.createCommandEncoder(),pass=enc.beginComputePass();pass.setPipeline(pipelines.init);pass.setBindGroup(0,groups[0]);pass.dispatchWorkgroups(Math.ceil(NX/8),Math.ceil(NZ/8));pass.end();device.queue.submit([enc.finish()]);current=1;previousEnergy=null;previousEnergyTime=null;window.__lampStats=null;runNumber++;const stabilized=params[P.STABILIZED]>.5,protocol=engagementState.mode==='july15'?'15 Jul engagement':'full capture';ui['run-number'].value=`run ${runNumber} · ${stabilized?'stabilized branch':'ignition transient'} · ${protocol} · t₀`;ui['control-status'].textContent=engagementState.mode==='july15'?'rebuilding · source initially bypassed':stabilized?'rebuilding · converging burning branch':'rebuilding · advancing ignition transient';ui['control-status'].className='solving';}
   initializeGPU=initialize;
   function resize(){const dpr=Math.min(devicePixelRatio,1.25),limit=Math.min(1800,device.limits.maxTextureDimension2D),w=Math.min(limit,Math.max(1,Math.floor(ui.volume.clientWidth*dpr))),h=Math.min(limit,Math.max(1,Math.floor(ui.volume.clientHeight*dpr)));if(ui.volume.width!==w||ui.volume.height!==h){ui.volume.width=w;ui.volume.height=h;}return w/h;}
 
@@ -420,21 +455,25 @@ async function main() {
     ui['wall-temperature'].textContent=`${maxWallT.toFixed(0)} K`;ui['wall-skin-temperature'].textContent=`${outerWallT.toFixed(0)} K`;ui['wall-melt-margin'].textContent=`${maxThroughWallDeltaK.toFixed(0)} K`;ui['wall-status'].className=wall.meltMarginK<0?'danger':wall.creepRelevant?'warning':'';ui['wall-status'].textContent=wall.state;ui['wall-detail'].textContent=`melt margin ${wall.meltMarginK>=0?'+':''}${wall.meltMarginK.toFixed(0)} K · peak q″ ${(maxInnerWallHeatFluxWm2/1e4).toFixed(2)} W cm⁻² at z ${(wallHotspotZM*1000).toFixed(1)} mm · |∇T| ${(wall.gradientKM/1e3).toFixed(1)} kK m⁻¹ · fully constrained elastic bound ${(wall.constrainedStressUpperBoundPa/1e6).toFixed(0)} MPa (not a stress solve)`;ui['wall-detail'].className=wall.meltMarginK<0?'danger':'';
     ui['reference-tad'].textContent=`${operatingReference.stoichiometric.adiabatic_temperature_k.toFixed(0)} K`;ui['reference-temperature-ratio'].textContent=temperatureRatio.toFixed(3);ui['reference-exitance'].textContent=`${(lineExitanceWM2/1000).toPrecision(3)} kW m⁻²`;ui['reference-status'].className=temperatureRatio>1.02?'danger':thermochemistryLimited?'warning':'';ui['reference-status'].textContent=temperatureRatio>1.02?`PEAK GAS EXCEEDS CANTERA STOICH CEILING · inspect reduced chemistry energy closure`:`Cantera ceiling respected · free-flame Sₗ ${operatingReference.freeFlame.laminar_flame_speed_m_s.toFixed(2)} m s⁻¹ is a comparator only · line exitance ${(lineExitanceWM2/PUBLIC_BENCHMARK.lineExitanceWM2).toPrecision(3)}× public peak`;
     const stabilized=params[P.STABILIZED]>.5,flame=flameCellAssessment({nozzleVelocityMS:nozzleState.velocityMS,reynolds:nozzleState.reynolds,mach:nozzleState.mach,flameBaseM:flameBase,flameTipM:flameTip,flameRadiusM:flameRadius,coreRadiusM:params[P.RC],cellLengthM:.94*params[P.L],maxReaction,wallTemperatureK:maxWallT,meltReferenceK});ui['flame-length'].textContent=flame.present?`${(flame.flameLengthM*1000).toFixed(1)} mm`:'—';ui['flame-wall-clearance'].textContent=flame.present?`${(flame.wallClearanceM*1000).toFixed(1)} mm`:'—';ui['flame-exit-clearance'].textContent=flame.present?`${(flame.axialClearanceM*1000).toFixed(1)} mm`:'—';ui['flame-status'].textContent=flame.state;ui['flame-status'].className=/EXCEEDED|IMPINGEMENT/.test(flame.state)?'danger':/WARNING|LOW-RE/.test(flame.state)?'warning':'';ui['flame-regime'].textContent=`${stabilized?'lip flame-holder closure active':'one-time ignition seed only'} · H₂ nozzle Re ${nozzleState.reynolds.toExponential(2)} · M ${nozzleState.mach.toFixed(3)} · shear proxy ${shearRateProxyS.toExponential(2)} s⁻¹ · Cantera premixed Sₗ ${operatingReference.freeFlame.laminar_flame_speed_m_s.toFixed(2)} m s⁻¹`;
-    const residualFraction=Math.abs(residualW)/Math.max(combustionW,1),branchLost=stabilized&&params[P.TIME]>.002&&(maxGasT<1200||burningCells===0);if(!designPending){ui['control-status'].textContent=branchLost?`stabilized branch lost · peak gas ${maxGasT.toFixed(0)} K · rerun or reduce flow`:params[P.TIME]<.05?(stabilized?`stabilized burning branch · ${burningCells} reacting cells · peak gas ${maxGasT.toFixed(0)} K`:'advancing ignition / blowoff transient'):`${stabilized?'stabilized branch':'transient'} · fuel converted ${(100*fuelConversion).toFixed(0)}% · thermal residual ${(100*residualFraction).toFixed(0)}%`;ui['control-status'].className=branchLost?'danger':residualFraction>.15||fuelConversion<.5?'solving':'';}
-    window.__lampStats={minT,maxT,maxGasT,maxWallT,outerWallT,meltMarginK:wall.meltMarginK,maxDeparture,maxNa,maxUpper,maxPhotons,maxReaction,physicalTimeS:params[P.TIME],runNumber,mode:stabilized?'stabilized':'transient',reference:{...operatingReference,temperatureRatio,lineExitanceWM2,publicLineExitanceWM2:PUBLIC_BENCHMARK.lineExitanceWM2,shearRateProxyS,radicalCycle:{...radicalCycle,coreTransitTimeS}},flame:{...flame,baseM:flameBase,tipM:flameTip,radiusM:flameRadius,openAirReferenceM,flameHolderEnabled:stabilized,burningCells,hotGasCells},thermal:{...wall,maxInnerWallHeatFluxWm2,wallHotspotZM,maxThroughWallDeltaK,cappedGasCells,gasCells,hotGasCells,thermochemistryLimited},nozzle:{...nozzleState},coflow:{...coflowState},returnFlow:{...returnState},selected:{T,neutral,u1,u2,p1,p2,fuel,ox,water,reaction,departure:b},rates,ledger,spectrum:{...spectrum,escapeByGroup:[...escapeByGroup],spontaneousByLine:[...spontaneousByLine]},energy:{fuelInputW,fuelConversion,unburnedPowerW,combustionW,atomicPumpW,quenchW,boundaryIncidentW,pvW,parasiticW,boundaryHeatW,outflowSensibleW,storageRateW,residualW,totalEnergy,conversion},boundary:{...boundary,leakageSpeedMS:boundaryLeakageSpeed},controls:{fuelFlowSLPM:+ui['fuel-flow'].value,oxidizerFlowSLPM:+ui['oxidizer-flow'].value,powerKW:params[P.POWER],equivalenceRatio:params[P.PHI],oxygenFraction:params[P.O2],flowSpeedMS:params[P.SPEED],coflowSpeedMS:params[P.COFLOW],returnSpeedMS:params[P.RETURN],pressurePa:params[P.PRESSURE],sodiumInventoryPPM:params[P.NA],coreRadiusM:params[P.RC],wallThicknessM:params[P.TW],nozzleDiameterM:params[P.NOZZLE],oxidizerNozzleDiameterM:params[P.OXNOZZLE],nozzleInsertionM:params[P.INSERTION],thermochemistryCeilingK:params[P.TMAX],simulationMode:stabilized?'stabilized':'transient'}};
+    const residualFraction=Math.abs(residualW)/Math.max(combustionW,1),protocolSettled=engagementState.mode==='steady'?params[P.TIME]>.002:engagementState.phase==='CAPTURED'&&params[P.TIME]>.010,branchLost=stabilized&&protocolSettled&&(maxGasT<1200||burningCells===0);if(!designPending){const engaging=engagementState.mode==='july15'&&engagementState.phase!=='CAPTURED';ui['control-status'].textContent=engaging?`${engagementState.phase.toLowerCase()} · chamber source ${(100*engagementState.capturedFraction).toFixed(0)}% captured · metered H₂ unchanged`:branchLost?`stabilized branch lost · peak gas ${maxGasT.toFixed(0)} K · rerun or reduce flow`:params[P.TIME]<.05?(stabilized?`stabilized burning branch · ${burningCells} reacting cells · peak gas ${maxGasT.toFixed(0)} K`:'advancing ignition / blowoff transient'):`${stabilized?'stabilized branch':'transient'} · fuel converted ${(100*fuelConversion).toFixed(0)}% · thermal residual ${(100*residualFraction).toFixed(0)}%`;ui['control-status'].className=branchLost?'danger':engaging||residualFraction>.15||fuelConversion<.5?'solving':'';}
+    window.__lampStats={minT,maxT,maxGasT,maxWallT,outerWallT,meltMarginK:wall.meltMarginK,maxDeparture,maxNa,maxUpper,maxPhotons,maxReaction,physicalTimeS:params[P.TIME],runNumber,mode:stabilized?'stabilized':'transient',engagement:{...engagementState},reference:{...operatingReference,temperatureRatio,lineExitanceWM2,publicLineExitanceWM2:PUBLIC_BENCHMARK.lineExitanceWM2,shearRateProxyS,radicalCycle:{...radicalCycle,coreTransitTimeS}},flame:{...flame,baseM:flameBase,tipM:flameTip,radiusM:flameRadius,openAirReferenceM,flameHolderEnabled:stabilized,burningCells,hotGasCells},thermal:{...wall,maxInnerWallHeatFluxWm2,wallHotspotZM,maxThroughWallDeltaK,cappedGasCells,gasCells,hotGasCells,thermochemistryLimited},nozzle:{...nozzleState},coflow:{...coflowState},returnFlow:{...returnState,engagedVelocityMS:returnState.velocityMS*engagementState.capturedFraction},selected:{T,neutral,u1,u2,p1,p2,fuel,ox,water,reaction,departure:b},rates,ledger,spectrum:{...spectrum,escapeByGroup:[...escapeByGroup],spontaneousByLine:[...spontaneousByLine]},energy:{fuelInputW,capturedFuelInputW:fuelInputW*engagementState.capturedFraction,bypassedFuelInputW:fuelInputW*engagementState.bypassFraction,fuelConversion,unburnedPowerW,combustionW,atomicPumpW,quenchW,boundaryIncidentW,pvW,parasiticW,boundaryHeatW,outflowSensibleW,storageRateW,residualW,totalEnergy,conversion},boundary:{...boundary,leakageSpeedMS:boundaryLeakageSpeed},controls:{fuelFlowSLPM:+ui['fuel-flow'].value,oxidizerFlowSLPM:+ui['oxidizer-flow'].value,powerKW:params[P.POWER],equivalenceRatio:params[P.PHI],oxygenFraction:params[P.O2],flowSpeedMS:params[P.SPEED],coflowSpeedMS:params[P.COFLOW],returnSpeedMS:params[P.RETURN],pressurePa:params[P.PRESSURE],sodiumInventoryPPM:params[P.NA],coreRadiusM:params[P.RC],wallThicknessM:params[P.TW],nozzleDiameterM:params[P.NOZZLE],oxidizerNozzleDiameterM:params[P.OXNOZZLE],nozzleInsertionM:params[P.INSERTION],thermochemistryCeilingK:params[P.TMAX],simulationMode:stabilized?'stabilized':'transient',operatingProtocol:engagementState.mode}};
     readback.unmap();reading=false;
   }
   async function stepPhysics(stepCount=8){
     const steps=Math.max(1,Math.min(5000,Math.floor(stepCount)));
-    const wasPaused=paused;paused=true;writeParams();
-    const enc=device.createCommandEncoder(),pass=enc.beginComputePass();
-    for(let step=0;step<steps;step++){compute(pass,pipelines.advance);for(let i=0;i<10;i++)compute(pass,pipelines.radiation);params[P.TIME]+=params[P.DT];}
-    pass.end();device.queue.submit([enc.finish()]);await device.queue.onSubmittedWorkDone();await inspect();paused=wasPaused;
+    const wasPaused=paused;paused=true;
+    for(let completed=0;completed<steps;){
+      const chunk=Math.min(32,steps-completed);updateEngagementState();writeParams();
+      const enc=device.createCommandEncoder(),pass=enc.beginComputePass();
+      for(let step=0;step<chunk;step++){compute(pass,pipelines.advance);for(let i=0;i<10;i++)compute(pass,pipelines.radiation);params[P.TIME]+=params[P.DT];}
+      pass.end();device.queue.submit([enc.finish()]);completed+=chunk;
+    }
+    updateEngagementState();await device.queue.onSubmittedWorkDone();await inspect();paused=wasPaused;
     return window.__lampStats;
   }
-  function tick(){const steps=paused||designPending?0:LIVE_STEPS_PER_FRAME;writeParams();const enc=device.createCommandEncoder();if(steps){const pass=enc.beginComputePass();for(let step=0;step<steps;step++){compute(pass,pipelines.advance);for(let i=0;i<LIVE_RADIATION_SWEEPS;i++)compute(pass,pipelines.radiation);params[P.TIME]+=params[P.DT];}pass.end();}const aspect=resize();device.queue.writeBuffer(viewBuffer,0,new Float32Array([0,orbit,pitch,aspect,0,0,volumeMode,0]));const bg=device.createBindGroup({layout:renderLayout,entries:[{binding:0,resource:{buffer:state[current]}},{binding:1,resource:{buffer:paramBuffer}},{binding:2,resource:{buffer:viewBuffer}}]}),rp=enc.beginRenderPass({colorAttachments:[{view:context.getCurrentTexture().createView(),clearValue:{r:.005,g:.006,b:.008,a:1},loadOp:'clear',storeOp:'store'}]});rp.setPipeline(renderPipeline);rp.setBindGroup(0,bg);rp.draw(3);rp.end();device.queue.submit([enc.finish()]);ui['sim-time'].value=`${params[P.TIME].toFixed(4)} s physical time`;if(frame++%60===0)inspect();requestAnimationFrame(tick);}
+  function tick(){const steps=paused||designPending?0:LIVE_STEPS_PER_FRAME;updateEngagementState();writeParams();const enc=device.createCommandEncoder();if(steps){const pass=enc.beginComputePass();for(let step=0;step<steps;step++){compute(pass,pipelines.advance);for(let i=0;i<LIVE_RADIATION_SWEEPS;i++)compute(pass,pipelines.radiation);params[P.TIME]+=params[P.DT];}pass.end();}const aspect=resize();device.queue.writeBuffer(viewBuffer,0,new Float32Array([0,orbit,pitch,aspect,0,0,volumeMode,0]));const bg=device.createBindGroup({layout:renderLayout,entries:[{binding:0,resource:{buffer:state[current]}},{binding:1,resource:{buffer:paramBuffer}},{binding:2,resource:{buffer:viewBuffer}}]}),rp=enc.beginRenderPass({colorAttachments:[{view:context.getCurrentTexture().createView(),clearValue:{r:.005,g:.006,b:.008,a:1},loadOp:'clear',storeOp:'store'}]});rp.setPipeline(renderPipeline);rp.setBindGroup(0,bg);rp.draw(3);rp.end();device.queue.submit([enc.finish()]);ui['sim-time'].value=`${params[P.TIME].toFixed(4)} s physical time`;if(frame++%60===0)inspect();requestAnimationFrame(tick);}
   ui.reset.addEventListener('click',initialize);ui.pause.addEventListener('click',()=>{paused=!paused;ui.pause.textContent=paused?'Resume':'Pause';});ui.volume.addEventListener('pointerdown',(event)=>{dragging=true;lastX=event.clientX;lastY=event.clientY;ui.volume.setPointerCapture(event.pointerId);});ui.volume.addEventListener('pointermove',(event)=>{if(!dragging)return;orbit+=(event.clientX-lastX)*.008;pitch=Math.max(-.65,Math.min(.65,pitch-(event.clientY-lastY)*.006));lastX=event.clientX;lastY=event.clientY;});ui.volume.addEventListener('pointerup',()=>dragging=false);
-  initialize();ui['gpu-status'].textContent=`WebGPU · ${NX}×${NZ} · coaxial burner + two walls + return · 6 radiation groups`;ui['gpu-status'].classList.add('ok');window.__lampControls={rebuild:initialize,step:stepPhysics,params,snapshot:()=>({runNumber,designPending,paused,physicalTimeS:params[P.TIME],simulationMode:params[P.STABILIZED]>.5?'stabilized':'transient',fuelFlowSLPM:+ui['fuel-flow'].value,oxidizerFlowSLPM:+ui['oxidizer-flow'].value,powerKW:params[P.POWER],equivalenceRatio:params[P.PHI],oxygenFraction:params[P.O2],flowSpeedMS:params[P.SPEED],coflowSpeedMS:params[P.COFLOW],returnSpeedMS:params[P.RETURN],nozzleReynolds:nozzleState.reynolds,nozzleMach:nozzleState.mach,openAirFlameReferenceM:openAirReferenceM,coreRadiusM:params[P.RC],wallThicknessM:params[P.TW],nozzleDiameterM:params[P.NOZZLE],oxidizerNozzleDiameterM:params[P.OXNOZZLE],nozzleInsertionM:params[P.INSERTION]})};tick();
+  initialize();ui['gpu-status'].textContent=`WebGPU · ${NX}×${NZ} · coaxial burner + two walls + return · 6 radiation groups`;ui['gpu-status'].classList.add('ok');window.__lampControls={rebuild:initialize,step:stepPhysics,params,snapshot:()=>({runNumber,designPending,paused,physicalTimeS:params[P.TIME],simulationMode:params[P.STABILIZED]>.5?'stabilized':'transient',operatingProtocol:engagementState.mode,engagement:{...engagementState},fuelFlowSLPM:+ui['fuel-flow'].value,oxidizerFlowSLPM:+ui['oxidizer-flow'].value,powerKW:params[P.POWER],equivalenceRatio:params[P.PHI],oxygenFraction:params[P.O2],flowSpeedMS:params[P.SPEED],coflowSpeedMS:params[P.COFLOW],returnSpeedMS:params[P.RETURN],nozzleReynolds:nozzleState.reynolds,nozzleMach:nozzleState.mach,openAirFlameReferenceM:openAirReferenceM,coreRadiusM:params[P.RC],wallThicknessM:params[P.TW],nozzleDiameterM:params[P.NOZZLE],oxidizerNozzleDiameterM:params[P.OXNOZZLE],nozzleInsertionM:params[P.INSERTION]})};tick();
 }
 
 function fail(error){console.error(error);if(!ui.fatal.hidden)return;ui.fatal.hidden=false;ui.fatal.textContent=`Sodium Lamp could not start.\n\n${error.message||error}`;ui['gpu-status'].textContent='WebGPU failed';ui['gpu-status'].classList.add('error');}

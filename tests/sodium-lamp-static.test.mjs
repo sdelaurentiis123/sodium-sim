@@ -35,6 +35,7 @@ test('GPU source contains explicit D1/D2 non-LTE kinetics and no LTE closure', a
   assert.match(compute, /let b=p\[2\]-p\[5\]/);
   assert.match(compute, /fn harmonicK\(/);
   assert.match(compute, /fn flameHolder\(/);
+  assert.match(compute, /return p\[27\]\*p\[28\]\*radial\*axial/);
   assert.match(compute, /1\.25\*p\[2\]\/p\[0\]/);
   assert.match(compute, /activation=max\(thermal,.92\*flameHolder\(r,z\)\)/);
   assert.match(compute, /fn groupWeight\(/);
@@ -89,6 +90,9 @@ test('reactor builder separates restart controls from live operating controls', 
   assert.match(html, /0\.0045 D/);
   assert.match(html, /id="spectrum-reversal"/);
   assert.match(html, /id="simulation-mode"/);
+  assert.match(html, /id="operating-protocol"/);
+  assert.match(html, /15 Jul NaCl entry · stabilized/);
+  assert.match(html, /fixed metered H₂|holds metered H₂ fixed/);
   assert.match(html, /id="peak-gas-temperature"/);
   assert.match(html, /Stabilized reference/);
   assert.match(html, /Ignition \/ blowoff transient/);
@@ -105,6 +109,12 @@ test('reactor builder separates restart controls from live operating controls', 
   assert.match(js, /meltReferenceK=2323/);
   assert.match(js, /thermochemistryCeilingK:params\[P\.TMAX\]/);
   assert.match(js, /P\.STABILIZED/);
+  assert.match(js, /P\.CAPTURE/);
+  assert.match(js, /chamberEngagementProtocol/);
+  assert.match(js, /ui\['simulation-mode'\]\.value='stable'/);
+  assert.match(js, /ui\.preset\.value='nacl'/);
+  assert.match(js, /fuel=p\[28\]\*fuelIn/);
+  assert.match(js, /total=p\[28\]\*p\[9\]\*1e-6/);
   assert.match(js, /fuelSLPM \* 0\.1798/);
   assert.match(js, /P\.PHI/);
   assert.match(js, /fn flameShape\(/);

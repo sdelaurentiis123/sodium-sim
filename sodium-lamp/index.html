@@ -26,6 +26,7 @@
       <div>
         <span>COMBUSTION BRANCH</span>
         <strong id="mode-badge">STABILIZED REFERENCE</strong>
+        <output id="protocol-status">FULL CHAMBER CAPTURE</output>
       </div>
       <p id="mode-explanation">A mesh-resolved burner-lip holder enables chemistry but adds no heat. The flame persists only while transported H₂ and O₂ are consumed.</p>
       <label for="simulation-mode">
@@ -33,6 +34,13 @@
         <select id="simulation-mode">
           <option value="stable" selected>Stabilized reference</option>
           <option value="transient">Ignition / blowoff transient</option>
+        </select>
+      </label>
+      <label for="operating-protocol">
+        <span>Chamber protocol</span>
+        <select id="operating-protocol">
+          <option value="steady" selected>Steady · fully engaged</option>
+          <option value="july15">15 Jul NaCl entry · stabilized</option>
         </select>
       </label>
     </section>
@@ -214,7 +222,7 @@
           <div><span>Cantera premixed S<sub>L</sub></span><strong id="derived-flame-speed">—</strong></div>
           <div><span>coaxial shear-rate proxy</span><strong id="derived-shear">—</strong></div>
         </div>
-        <p class="run-protocol">Choose the stabilized branch for a persistent burner-lip flame, or the ignition transient to test whether the one-time seed survives. Set physical inputs, then press <strong>Start / rerun from t=0</strong> for a comparable run. <output id="run-number">run —</output></p>
+        <p class="run-protocol">Choose the stabilized branch for a persistent burner-lip flame, or the ignition transient to test whether the one-time seed survives. The 15 Jul protocol holds metered H₂ fixed while an area-averaged chamber source ramps from bypassed to captured; its accelerated timing and geometry are not reconstructed from the video. Set physical inputs, then press <strong>Start / rerun from t=0</strong> for a comparable run. <output id="run-number">run —</output></p>
       </div>
 
       <div class="audit">

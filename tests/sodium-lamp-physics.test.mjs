@@ -33,7 +33,55 @@ import {
   conversionFeasibility,
   sodiumRadicalCycleDiagnostic,
   reducedBurnerCellStep,
+  chamberEngagementProtocol,
 } from '../sodium-lamp/physics.js';
+
+test('July 15 engagement keeps metered hydrogen fixed while chamber capture ramps monotonically', () => {
+  const times=[0,.0015,.0025,.00425,.007,.010];
+  const states=times.map((timeS)=>chamberEngagementProtocol({timeS,mode:'july15'}));
+  assert.equal(states[0].phase,'BYPASS');
+  assert.equal(states.at(-1).phase,'CAPTURED');
+  assert.equal(states[0].capturedFraction,0);
+  assert.equal(states.at(-1).capturedFraction,1);
+  for(const state of states){
+    assert.equal(state.meteredFuelFraction,1);
+    assert.ok(Math.abs(state.capturedFraction+state.bypassFraction-1)<1e-15);
+  }
+  for(let index=1;index<states.length;index++){
+    assert.ok(states[index].capturedFraction>=states[index-1].capturedFraction);
+  }
+});
+
+test('steady engagement exactly reproduces full source capture', () => {
+  for(const timeS of [0,.001,.1,10]){
+    const state=chamberEngagementProtocol({timeS,mode:'steady'});
+    assert.equal(state.capturedFraction,1);
+    assert.equal(state.bypassFraction,0);
+    assert.equal(state.meteredFuelFraction,1);
+    assert.equal(state.accelerated,false);
+  }
+});
+
+test('zero chamber engagement cannot create reactants or combustion heat at the holder', () => {
+  const common={temperatureK:520,fuelFraction:.8,stoichiometricOxidizerFraction:.7,pressurePa:1.4e5,radiusM:.00208,axialPositionM:.00703,fuelNozzleDiameterM:.004,nozzleInsertionM:.006,stabilized:true};
+  const bypassed=reducedBurnerCellStep({...common,sourceEngagement:0});
+  const captured=reducedBurnerCellStep({...common,sourceEngagement:1});
+  assert.equal(bypassed.reactionRateS,0);
+  assert.equal(bypassed.chemicalPowerDensityWM3,0);
+  assert.equal(bypassed.fuelFraction,0);
+  assert.equal(bypassed.stoichiometricOxidizerFraction,0);
+  assert.equal(bypassed.nextTemperatureK,common.temperatureK);
+  assert.ok(captured.reactionRateS>0);
+  assert.ok(captured.nextTemperatureK>common.temperatureK);
+});
+
+test('admitted holder heat rises monotonically across the engagement ramp', () => {
+  const common={temperatureK:520,fuelFraction:.8,stoichiometricOxidizerFraction:.7,pressurePa:1.4e5,radiusM:.00208,axialPositionM:.00703,fuelNozzleDiameterM:.004,nozzleInsertionM:.006,stabilized:true};
+  const powers=[0,.25,.5,.75,1].map((sourceEngagement)=>reducedBurnerCellStep({...common,sourceEngagement}).chemicalPowerDensityWM3);
+  for(let index=1;index<powers.length;index++)assert.ok(powers[index]>=powers[index-1]);
+  assert.equal(powers[0],0);
+  assert.ok(powers.at(-1)>0);
+});
 
 test('conversion feasibility separates optical power from electrical power', () => {
   const audit=conversionFeasibility({fuelInputW:1000,pvOpticalW:200});

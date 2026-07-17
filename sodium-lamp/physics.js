@@ -38,6 +38,52 @@ export const PUBLIC_BENCHMARK = Object.freeze({
   scope: 'Public component peaks were not simultaneous; NaI brightest run has stated measurement uncertainty',
 });
 
+export const CHAMBER_ENGAGEMENT_PROTOCOL = Object.freeze({
+  source: 'https://x.com/DanielleFong/status/2077515313911042150',
+  reportedDurationS: 15.541,
+  reportedCondition: 'NaCl demonstration at unchanged metered hydrogen fuel rate',
+  reportedAbsences: 'no exhaust-to-oxidizer or salt recuperation',
+  defaultHoldS: 0.0015,
+  defaultRampS: 0.0055,
+  scope: 'Accelerated area-averaged chamber-source engagement; not a reconstruction of undisclosed geometry, motion, or video timing',
+});
+
+export function chamberEngagementProtocol({
+  timeS = 0,
+  mode = 'steady',
+  holdS = CHAMBER_ENGAGEMENT_PROTOCOL.defaultHoldS,
+  rampS = CHAMBER_ENGAGEMENT_PROTOCOL.defaultRampS,
+} = {}) {
+  const time = Math.max(0, Number(timeS) || 0);
+  if (mode !== 'july15') {
+    return {
+      mode: 'steady',
+      phase: 'CAPTURED',
+      capturedFraction: 1,
+      bypassFraction: 0,
+      meteredFuelFraction: 1,
+      accelerated: false,
+      source: CHAMBER_ENGAGEMENT_PROTOCOL.source,
+      scope: 'Full chamber-source engagement from t=0',
+    };
+  }
+  const hold = Math.max(0, Number(holdS) || 0);
+  const ramp = Math.max(Number.EPSILON, Number(rampS) || 0);
+  const coordinate = Math.max(0, Math.min(1, (time - hold) / ramp));
+  const capturedFraction = coordinate * coordinate * (3 - 2 * coordinate);
+  const phase = coordinate <= 0 ? 'BYPASS' : coordinate >= 1 ? 'CAPTURED' : 'ENTERING';
+  return {
+    mode: 'july15',
+    phase,
+    capturedFraction,
+    bypassFraction: 1 - capturedFraction,
+    meteredFuelFraction: 1,
+    accelerated: true,
+    source: CHAMBER_ENGAGEMENT_PROTOCOL.source,
+    scope: CHAMBER_ENGAGEMENT_PROTOCOL.scope,
+  };
+}
+
 export function conversionFeasibility({
   fuelInputW,
   pvOpticalW,
@@ -818,12 +864,14 @@ export function reducedBurnerCellStep({
   chemistryRateS = 4e4,
   atomicPumpFraction = 0.01,
   thermochemistryCeilingK = 2850,
+  sourceEngagement = 1,
 }) {
   const smoothstep = (low, high, value) => {
     const x = Math.max(0, Math.min(1, (value - low) / (high - low)));
     return x * x * (3 - 2 * x);
   };
-  const holder = burnerLipFlameHolderActivity({
+  const engagement = Math.max(0, Math.min(1, Number(sourceEngagement) || 0));
+  const holder = engagement * burnerLipFlameHolderActivity({
     radiusM,
     axialPositionM,
     fuelNozzleDiameterM,
@@ -834,10 +882,9 @@ export function reducedBurnerCellStep({
     smoothstep(760, 1120, temperatureK),
     0.92 * holder,
   );
-  const available = Math.min(
-    Math.max(0, fuelFraction),
-    Math.max(0, stoichiometricOxidizerFraction),
-  );
+  const engagedFuelFraction = engagement * Math.max(0, fuelFraction);
+  const engagedOxidizerFraction = engagement * Math.max(0, stoichiometricOxidizerFraction);
+  const available = Math.min(engagedFuelFraction, engagedOxidizerFraction);
   const reactionRateS = activation * available * chemistryRateS;
   const reactedFraction = Math.min(available, timeStepS * reactionRateS);
   const molarDensityM3 = pressurePa / (8.314462618 * Math.max(temperatureK, 300));
@@ -850,13 +897,14 @@ export function reducedBurnerCellStep({
   );
   return {
     holder,
+    sourceEngagement: engagement,
     activation,
     reactionRateS,
     reactedFraction,
     chemicalPowerDensityWM3,
     nextTemperatureK,
-    fuelFraction: Math.max(0, fuelFraction - reactedFraction),
-    stoichiometricOxidizerFraction: Math.max(0, stoichiometricOxidizerFraction - reactedFraction),
+    fuelFraction: Math.max(0, engagedFuelFraction - reactedFraction),
+    stoichiometricOxidizerFraction: Math.max(0, engagedOxidizerFraction - reactedFraction),
   };
 }
 
