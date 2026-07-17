@@ -76,6 +76,8 @@ test('reactor builder separates restart controls from live operating controls', 
   assert.match(html, /id="derived-free-flame"/);
   assert.match(html, /id="fuel-conversion"/);
   assert.match(html, /coaxial burner · lip = inlet plane/);
+  assert.match(html, /Camera-like sodium glow/);
+  assert.match(html, /Display-only camera response/);
   assert.match(html, /solved inner \+ outer sapphire/);
   assert.match(html, /Start \/ rerun from t=0/);
   assert.match(js, /meltReferenceK=2323/);
@@ -86,6 +88,7 @@ test('reactor builder separates restart controls from live operating controls', 
   assert.match(js, /fn flameShape\(/);
   assert.match(js, /let dFuel=/);
   assert.match(js, /let nozzleMask=max\(max\(fuelTube,shroudTube\),max\(fuelLip,shroudLip\)\)/);
+  assert.match(js, /mode==4/);
   assert.match(js, /let annulus=smoothstep\(rn,rn\+edge,r\)/);
   assert.doesNotMatch(js, /let background=/);
   assert.match(js, /-p\[25\]\*\(1\.-top\)/);

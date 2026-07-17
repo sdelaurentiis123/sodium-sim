@@ -45,7 +45,7 @@
     </section>
     <section class="visuals" aria-label="Synchronized simulation views">
       <article class="viewport viewport-3d">
-        <div class="view-label"><span>3D cutaway · missing wedge exposes interior</span><select id="volume-field" aria-label="3D volume field"><option value="2" selected>Trapped 589 nm radiation</option><option value="3">H₂/O₂ reaction sheet</option><option value="0">Local Na 589 nm emissivity</option><option value="1">Gas temperature</option></select></div>
+        <div class="view-label"><span>3D reactor view</span><select id="volume-field" aria-label="3D volume field"><option value="4" selected>Camera-like sodium glow</option><option value="2">Trapped 589 nm radiation</option><option value="3">H₂/O₂ reaction sheet</option><option value="0">Local Na 589 nm emissivity</option><option value="1">Gas temperature</option></select></div>
         <canvas id="volume" aria-label="Ray-marched 3D cutaway of the sodium combustor"></canvas>
         <div class="construction-key" aria-label="Reactor construction layers">
           <span><i class="core"></i>reacting core</span>
@@ -55,8 +55,8 @@
           <span><i class="optical"></i>PV / optical boundary</span>
         </div>
         <div class="drag-hint">drag to orbit · <output id="sim-time">0.000 s physical time</output></div>
-        <p id="volume-definition" class="volume-definition">The yellow volume is transported sodium D-line radiation surrounding the narrow reaction core.</p>
-        <div id="volume-scale" class="volume-scale photon"><span>10⁻⁹</span><i></i><span>10¹ / mode</span></div>
+        <p id="volume-definition" class="volume-definition">Display-only camera response: solved sodium emission and trapped D-line radiation viewed through the complete cell with sensor exposure and saturation.</p>
+        <div id="volume-scale" class="volume-scale camera"><span>sensor black</span><i></i><span>clipped Na-D</span></div>
       </article>
       <article class="nonlte-instrument" aria-label="Non-LTE sodium atomic-state instrument">
         <div class="instrument-head">
