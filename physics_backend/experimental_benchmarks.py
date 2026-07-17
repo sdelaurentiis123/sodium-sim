@@ -34,6 +34,24 @@ ASPIRATIONAL_PV_EFFICIENCY = 0.60
 TARGET_WIRE_TO_WIRE_EFFICIENCY = 0.40
 REFERENCE_ELECTROLYZER_EFFICIENCY = 0.80
 
+PUBLIC_CONFINEMENT_VIDEO = {
+    "source": "https://x.com/DanielleFong/status/2075742083605028898",
+    "published_date": "2026-07-11",
+    "reported_configuration": "hydrogen flame confinement; salt identity not stated",
+    "duration_s": 159.25,
+    "analysis_window_s": [10.0, 150.0],
+    "sampled_frames": 141,
+    "median_clipped_core_width_fraction_of_chamber_window": 0.200,
+    "clipped_core_width_fraction_p10_p90": [0.1697, 0.2182],
+    "centerline_jitter_fraction_of_chamber_window": 0.00449,
+    "median_axial_coverage_fraction": 1.0,
+    "scope": (
+        "fixed-ROI camera morphology; all-RGB >=245 clipped core. "
+        "The luminous column crosses the analysis window, so length is censored. "
+        "No temperature, radiance, line power, or sodium concentration is inferred."
+    ),
+}
+
 # Gomez Martin et al., J. Phys. Chem. A 121 (2017) 7667--7674.
 # The termolecular value is specific to N2 as the third body. Unit conversion:
 # cm3 -> 1e-6 m3 and cm6 -> 1e-12 m6.
@@ -300,6 +318,7 @@ def public_experiment_benchmark() -> dict:
             inlet_temperature_k=320.0,
         ),
         "conversion_feasibility": conversion_feasibility_benchmark(),
+        "public_confinement_video": PUBLIC_CONFINEMENT_VIDEO,
         "salt_vapor_pressure": {
             "at_1200_c": {
                 "NaCl": antoine_vapor_pressure_bar(1473.15, NACL_ANTOINE),

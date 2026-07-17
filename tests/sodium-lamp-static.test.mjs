@@ -72,6 +72,9 @@ test('reactor builder separates restart controls from live operating controls', 
   assert.match(html, /id="reference-exitance"/);
   assert.match(html, /Na \/ NaOH flame-coupling screen/);
   assert.match(html, /id="radical-cycle-time"/);
+  assert.match(html, /11 Jul 2026 public confinement video/);
+  assert.match(html, /CONFINEMENT EVIDENCE · NOT RADIOMETRY/);
+  assert.match(html, /0\.0045 D/);
   assert.match(html, /id="spectrum-reversal"/);
   assert.match(html, /id="simulation-mode"/);
   assert.match(html, /id="peak-gas-temperature"/);

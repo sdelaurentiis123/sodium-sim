@@ -63,6 +63,11 @@ def test_public_report_includes_reference_chemistry_and_measurement_warning() ->
         "na_o_o_partial_pump_rate_per_na_s"
     ] > 1_000
     assert "2x" in report["reported"]["measurement_warning"]
+    video = report["public_confinement_video"]
+    assert video["duration_s"] == pytest.approx(159.25)
+    assert video["median_clipped_core_width_fraction_of_chamber_window"] == pytest.approx(0.2)
+    assert video["centerline_jitter_fraction_of_chamber_window"] < 0.005
+    assert "No temperature" in video["scope"]
 
 
 def test_wire_to_wire_target_exposes_required_fuel_to_light_burden() -> None:

@@ -25,6 +25,15 @@ export const PUBLIC_BENCHMARK = Object.freeze({
   futurePvEfficiency: 0.60,
   wireToWireTarget: 0.40,
   referenceElectrolyzerEfficiency: 0.80,
+  confinementVideo: Object.freeze({
+    source: 'https://x.com/DanielleFong/status/2075742083605028898',
+    durationS: 159.25,
+    clippedCoreWidthFraction: 0.200,
+    clippedCoreWidthP10P90: Object.freeze([0.1697, 0.2182]),
+    centerlineJitterFraction: 0.00449,
+    axialCoverageFraction: 1.0,
+    scope: 'Hydrogen flame confinement video; salt unspecified; exposure-clipped morphology only',
+  }),
   wallTemperatureKRange: Object.freeze([1673.15, 1873.15]),
   scope: 'Public component peaks were not simultaneous; NaI brightest run has stated measurement uncertainty',
 });
