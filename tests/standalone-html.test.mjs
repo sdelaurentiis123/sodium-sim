@@ -1,9 +1,16 @@
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import test from "node:test";
 
 const html = readFileSync("na-d-transport-lab.html", "utf8");
 const source = readFileSync("app/standalone-engine.ts", "utf8");
+const freshPath = process.env.STANDALONE_FRESH ?? "dist/standalone-check.html";
+
+test("committed standalone lab matches a fresh engine build", { skip: !existsSync(freshPath) }, () => {
+  const fresh = readFileSync(freshPath, "utf8");
+  assert.ok(fresh === html,
+    "na-d-transport-lab.html is stale; regenerate it with `npm run standalone`");
+});
 
 test("standalone reactor lab contains a parseable inline engine and worker", () => {
   const script = html.match(/<script>([\s\S]*?)<\/script>/)?.[1];

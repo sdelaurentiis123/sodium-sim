@@ -33,10 +33,26 @@ def test_2000_k_coefficients_have_measured_order_and_scale() -> None:
     assert coefficients["H2"] == pytest.approx(3.85e-16, rel=0.03)
 
 
-def test_mixture_rate_is_linear_in_pressure_and_composition_is_normalized() -> None:
+def test_mixture_rate_is_linear_in_pressure() -> None:
     composition = {"H2": 0.06, "O2": 0.04, "H2O": 0.52, "N2": 0.38}
     base = mixture_quenching_rate_s(temperature_k=2000, pressure_pa=1.4e5, composition=composition)
     doubled = mixture_quenching_rate_s(temperature_k=2000, pressure_pa=2.8e5, composition=composition)
     assert float(doubled["rate_s"]) == pytest.approx(2 * float(base["rate_s"]))
     assert float(base["rate_s"]) > 1e9
     assert base["within_measured_range"] is True
+
+
+def test_inert_dilution_lowers_the_quench_rate_proportionally() -> None:
+    quenchers = {"H2": 0.06, "O2": 0.04, "H2O": 0.52, "N2": 0.38}
+    diluted = {name: 0.5 * value for name, value in quenchers.items()}
+    diluted["Ar"] = 0.5
+    full = mixture_quenching_rate_s(temperature_k=2000, pressure_pa=1.4e5, composition=quenchers)
+    half = mixture_quenching_rate_s(temperature_k=2000, pressure_pa=1.4e5, composition=diluted)
+    assert float(half["rate_s"]) == pytest.approx(0.5 * float(full["rate_s"]))
+
+
+def test_overfull_quencher_composition_is_rejected() -> None:
+    with pytest.raises(ValueError):
+        mixture_quenching_rate_s(
+            temperature_k=2000, pressure_pa=1.4e5, composition={"H2": 0.8, "O2": 0.4}
+        )

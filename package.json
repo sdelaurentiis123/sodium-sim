@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "engines": {
-    "node": ">=22.13.0"
+    "node": ">=23.6.0"
   },
   "scripts": {
     "dev": "WRANGLER_LOG_PATH=.wrangler/wrangler.log vinext dev",
@@ -11,7 +11,9 @@
     "start": "WRANGLER_LOG_PATH=.wrangler/wrangler.log vinext start",
     "standalone": "node scripts/build-standalone.mjs",
     "sweep:branches": "node scripts/combustion-branch-sweep.mjs",
-    "test": "node --check sodium-lamp/app.js && npm run standalone && npm run build && node --test tests/rendered-html.test.mjs tests/standalone-html.test.mjs tests/transport-physics.test.ts tests/sodium-physical.test.ts tests/sodium-atomic-engine.test.ts tests/engine-balance.test.mjs tests/reactor-engine.test.ts tests/sodium-lamp-physics.test.mjs tests/sodium-lamp-static.test.mjs tests/combustion-branch-sweep.test.mjs",
+    "test": "node --check sodium-lamp/app.js && node scripts/build-standalone.mjs --out dist/standalone-check.html && node --test tests/standalone-html.test.mjs tests/transport-physics.test.ts tests/sodium-physical.test.ts tests/sodium-atomic-engine.test.ts tests/engine-balance.test.mjs tests/reactor-engine.test.ts tests/sodium-lamp-physics.test.mjs tests/sodium-lamp-static.test.mjs tests/combustion-branch-sweep.test.mjs",
+    "test:rendered": "npm run build && node --test tests/rendered-html.test.mjs",
+    "typecheck": "tsc --noEmit",
     "lint": "eslint . --ignore-pattern dist --ignore-pattern .next",
     "db:generate": "drizzle-kit generate"
   },
@@ -23,6 +25,7 @@
   },
   "devDependencies": {
     "@cloudflare/vite-plugin": "1.37.1",
+    "@cloudflare/workers-types": "^4.20260702.1",
     "@tailwindcss/postcss": "4.2.1",
     "@types/node": "22.19.19",
     "@types/react": "19.2.14",

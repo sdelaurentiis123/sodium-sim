@@ -351,7 +351,7 @@ function axialVelocityAt(r,z,material) {
     return (params[P.SPEED]*decay*jet+params[P.COFLOW]*annulus)*(1-.85*top);
   }
   const a=params[P.RC]+params[P.TW],b=params[P.R]-params[P.TW],rr=Math.max(0,Math.min(1,(r-a)/Math.max(b-a,1e-4)));
-  return -params[P.RETURN]*(1-top)*(.6+.4*rr);
+  return -params[P.CAPTURE]*params[P.RETURN]*(1-top)*(.6+.4*rr);
 }
 function localRawPump(r,z,T,neutral,reactionFraction) {
   const nNa=params[P.PRESSURE]*neutral/(CONSTANTS.kB*T), qchem=sourceAt(r,z,T,reactionFraction);

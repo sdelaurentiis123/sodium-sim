@@ -143,6 +143,9 @@ test('reactor builder separates restart controls from live operating controls', 
   assert.match(js, /let annulus=smoothstep\(rn,rn\+edge,r\)/);
   assert.doesNotMatch(js, /let background=/);
   assert.match(js, /-p\[25\]\*\(1\.-top\)/);
+  // CPU energy-ledger flow must mirror the GPU's capture-scaled return annulus.
+  assert.match(js, /return p\[28\]\*vec2\(\.22\*p\[25\]/);
+  assert.match(js, /return -params\[P\.CAPTURE\]\*params\[P\.RETURN\]\*\(1-top\)/);
   assert.match(js, /let oxIn=smoothstep\(\.50\*p\[21\]/);
   assert.match(js, /annularReturnState/);
   assert.match(js, /maxInnerWallHeatFluxWm2/);

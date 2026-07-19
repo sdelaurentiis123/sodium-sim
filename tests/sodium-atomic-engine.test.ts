@@ -49,6 +49,17 @@ test("hyperfine aggregate preserves the D2 to D1 opacity hierarchy", () => {
   assert.equal(d1.components.reduce((sum, component) => sum + component.strength, 0), 1);
 });
 
+test("collisional redistribution uses the pi-FWHM dephasing convention", () => {
+  for (const line of atomicLineStates(base)) {
+    const dephasingRateS = Math.PI * line.collisionFwhmHz;
+    const expected = dephasingRateS / (dephasingRateS + line.A);
+    assert.ok(Math.abs(line.crdProbability / expected - 1) < 1e-12);
+  }
+  // At 3 Torr / 1500 K the CRD branch is ~72%; the former 2*pi convention gave ~84%.
+  const [d2] = atomicLineStates(base);
+  assert.ok(d2.crdProbability > 0.68 && d2.crdProbability < 0.76);
+});
+
 test("3D transport conserves packets and identifies both boundaries", () => {
   const result = simulateAtomicTransport(base, 1200, 91);
   assert.equal(result.escaped + result.quenched + result.truncated, 1200);
@@ -68,7 +79,23 @@ test("quenching is derived from a rate coefficient and gas density", () => {
 test("non-equilibrium rate balance closes and exceeds Boltzmann when pumped", () => {
   const result = simulateAtomicTransport(base, 1200, 1904);
   const population = nonEquilibriumPopulation(base, result);
-  assert.ok(Math.abs(population.pumpPowerKW - population.linePowerKW - population.quenchPowerKW) < 1e-12);
+  // Independent reconstruction from Monte Carlo outputs and CODATA constants,
+  // not from the fields the source derives internally.
+  const hcOverE = 1239.8419843320026; // eV·nm
+  const expectedPhotonEV = (2 * hcOverE / 588.995 + hcOverE / 589.5924) / 3;
+  assert.ok(Math.abs(population.photonEV / expectedPhotonEV - 1) < 1e-4);
+  const averageA = (2 * result.lines[0].A + result.lines[1].A) / 3;
+  const radiativeRateS = averageA * result.escapeProbabilityPerEmission;
+  // The engine caps the manifold at the g(3p)/(g(3s)+g(3p)) = 0.75 limit.
+  const expectedUpper = Math.min(0.75, base.pumpRateS /
+    (base.pumpRateS + radiativeRateS + result.quenchRateS));
+  assert.ok(Math.abs(population.upperFraction / expectedUpper - 1) < 1e-12);
+  const volumeCm3 = Math.PI * (base.radiusMm / 10) ** 2 * (base.lengthMm / 10);
+  const expectedPumpKW = result.sodiumDensityCm3 * volumeCm3 * expectedUpper *
+    (radiativeRateS + result.quenchRateS) * expectedPhotonEV * 1.602176634e-19 / 1000;
+  assert.ok(Math.abs(population.pumpPowerKW / expectedPumpKW - 1) < 1e-4);
+  assert.ok(Math.abs(population.linePowerKW / expectedPumpKW -
+    radiativeRateS / (radiativeRateS + result.quenchRateS)) < 1e-4);
   assert.ok(population.upperFraction > population.boltzmannUpperFraction);
   assert.ok(population.enhancement > 1);
 });

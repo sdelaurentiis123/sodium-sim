@@ -148,7 +148,7 @@ export function atomicLineStates(inputs: AtomicInputs): AtomicLineState[] {
       Math.sqrt(450 / inputs.temperatureK);
     const lorentzHwhmHz = line.A / (4 * Math.PI) + collisionFwhmHz / 2;
     const voigtA = lorentzHwhmHz / dopplerWidthHz;
-    const collisionRateS = 2 * Math.PI * collisionFwhmHz;
+    const collisionRateS = Math.PI * collisionFwhmHz;
     const crdProbability = collisionRateS / (collisionRateS + line.A);
     const components = line.hyperfine.map((component) => ({
       ...component,
@@ -381,7 +381,10 @@ export function nonEquilibriumPopulation(inputs: AtomicInputs, result: AtomicTra
   const atomCount = result.sodiumDensityCm3 * volumeCm3;
   const linePowerKW = atomCount * upperFraction * effectiveRadiativeRateS * photonEV * EV / 1000;
   const quenchPowerKW = atomCount * upperFraction * result.quenchRateS * photonEV * EV / 1000;
-  const boltzmannUpperFraction = Math.min(1, 3 * Math.exp(-photonEV * EV / (KB * inputs.temperatureK)));
+  // Convert the g-weighted Boltzmann ratio n_up/n_low into the same
+  // n_up/(n_up+n_low) fraction that upperFraction reports.
+  const boltzmannRatio = 3 * Math.exp(-photonEV * EV / (KB * inputs.temperatureK));
+  const boltzmannUpperFraction = boltzmannRatio / (1 + boltzmannRatio);
   return {
     photonEV, effectiveRadiativeRateS, upperFraction, boltzmannUpperFraction,
     enhancement: upperFraction / Math.max(boltzmannUpperFraction, 1e-30),

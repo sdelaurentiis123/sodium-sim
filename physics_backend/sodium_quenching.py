@@ -92,7 +92,8 @@ def mixture_quenching_rate_s(
     total = sum(fractions.values())
     if total <= 0:
         raise ValueError("composition must contain a supported quencher")
-    fractions = {name: value / total for name, value in fractions.items()}
+    if total > 1.0 + 1e-9:
+        raise ValueError("supported quencher mole fractions exceed unity")
     number_density_m3 = pressure_pa / (KB_J_K * temperature_k)
     per_species = {}
     for name, fraction in fractions.items():
