@@ -14,11 +14,9 @@
     "test": "node --check sodium-lamp/app.js && node scripts/build-standalone.mjs --out dist/standalone-check.html && node --test tests/standalone-html.test.mjs tests/transport-physics.test.ts tests/sodium-physical.test.ts tests/sodium-atomic-engine.test.ts tests/engine-balance.test.mjs tests/reactor-engine.test.ts tests/sodium-lamp-physics.test.mjs tests/sodium-lamp-static.test.mjs tests/combustion-branch-sweep.test.mjs",
     "test:rendered": "npm run build && node --test tests/rendered-html.test.mjs",
     "typecheck": "tsc --noEmit",
-    "lint": "eslint . --ignore-pattern dist --ignore-pattern .next",
-    "db:generate": "drizzle-kit generate"
+    "lint": "eslint . --ignore-pattern dist --ignore-pattern .next"
   },
   "dependencies": {
-    "drizzle-orm": "0.45.2",
     "next": "16.2.6",
     "react": "19.2.6",
     "react-dom": "19.2.6"
@@ -32,7 +30,6 @@
     "@types/react-dom": "19.2.3",
     "@vitejs/plugin-react": "6.0.2",
     "@vitejs/plugin-rsc": "0.5.26",
-    "drizzle-kit": "0.31.10",
     "eslint": "9.39.4",
     "eslint-config-next": "16.2.6",
     "react-server-dom-webpack": "19.2.6",
