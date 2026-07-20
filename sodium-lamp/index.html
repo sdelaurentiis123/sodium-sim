@@ -22,6 +22,18 @@
   </header>
 
   <main>
+    <section class="intro" aria-label="What this simulator is">
+      <div class="intro-lede">
+        <p class="intro-question">Can trapped light hold sodium out of thermal equilibrium?</p>
+        <p>A hydrogen–oxygen flame burns inside a sapphire cell seeded with sodium salt. Excited sodium atoms emit the yellow D&nbsp;lines at 589&nbsp;nm — but the vapor is so opaque at that exact wavelength that each photon is reabsorbed thousands of times before escaping. Every reabsorption re-excites an atom, so the excited population can sit <em>far above</em> what temperature alone would allow. That departure from equilibrium is what this page solves — live, on your GPU — and it is the physical basis of a combustion-driven sodium lamp feeding a matched photovoltaic cell.</p>
+      </div>
+      <div class="intro-guide">
+        <div><b>1</b><p><strong>Watch the cell.</strong> The bright full-chamber flash at t=0 is the seeded starting condition. The solver then relaxes to the true solution: a small flame anchored at the burner lip. Dimmer is not dead — D-line glow falls steeply with temperature.</p></div>
+        <div><b>2</b><p><strong>Read the departure coefficient.</strong> The big yellow number is the solved 3p population divided by the detached Boltzmann prediction. Above 1 means radiation trapping and chemistry are beating thermal equilibrium.</p></div>
+        <div><b>3</b><p><strong>Audit the books.</strong> Every watt is tracked from metered fuel to light, heat, exhaust and storage. The rate audit and energy ledger below expose the full balance — including the closure residual.</p></div>
+      </div>
+    </section>
+
     <section class="mode-bar" aria-label="Combustion solution mode">
       <div>
         <span>COMBUSTION BRANCH</span>
@@ -63,6 +75,7 @@
           <span><i class="optical"></i>PV / optical boundary</span>
         </div>
         <div class="drag-hint">drag to orbit · <output id="sim-time">0.000 s physical time</output></div>
+        <output id="run-phase" class="run-phase">initializing — the first bright flash is the seeded starting condition, not solved combustion</output>
         <p id="volume-definition" class="volume-definition">Display-only camera response: solved sodium emission and trapped D-line radiation viewed through the complete cell with sensor exposure and saturation.</p>
         <div id="volume-scale" class="volume-scale camera"><span>sensor black</span><i></i><span>clipped Na-D</span></div>
       </article>
@@ -89,6 +102,7 @@
             <div><dt>excitation T</dt><dd id="excitation-temperature">—</dd></div>
             <div><dt>D2 optical depth</dt><dd id="optical-depth">—</dd></div>
           </dl>
+          <p class="caption">b₃ₚ &gt; 1 means the solved excited population exceeds the thermal-equilibrium prediction at the same local temperature — the non-LTE claim, quantified.</p>
         </div>
 
         <div class="atomic-and-population">
@@ -129,6 +143,7 @@
             <div><span>escaped / produced</span><strong id="spectrum-yield">—</strong></div>
             <div><span>D2 self-reversal</span><strong id="spectrum-reversal">—</strong></div>
           </div>
+          <p class="caption">The dip at each line center is self-reversal: light from the hot core is reabsorbed by the cooler sodium shell it must cross to escape. A model without real radiation trapping cannot produce it.</p>
         </div>
 
         <details class="engineering-details">
@@ -261,6 +276,7 @@
             <div><dt>stored-energy rate</dt><dd id="storage-rate">—</dd></div>
             <div class="residual"><dt>closure residual</dt><dd id="energy-residual">—</dd></div>
           </dl>
+          <p class="caption">Metered fuel power in; light, heat, exhaust, and stored energy out. The residual is what the integration fails to account for — it should settle near zero, and it is displayed rather than hidden.</p>
         </div>
 
         <div class="conversion-gate" aria-label="Fuel to light to electricity feasibility gate">
@@ -296,8 +312,8 @@
   </main>
 
   <footer>
-    <p>Reduced model geometry follows the public concentric-cylinder combustor and annular return-flow concept. Physics constants are embedded and inspectable; no server or model API is involved.</p>
-    <nav><a href="https://lightcellenergy.com/" rel="noreferrer">Lightcell</a><a href="https://patents.google.com/patent/US12136898B2/en" rel="noreferrer">Public geometry</a><a href="https://physics.nist.gov/PhysRefData/ASD/lines_form.html" rel="noreferrer">NIST atomic data</a></nav>
+    <p>Reduced model geometry follows the public concentric-cylinder combustor and annular return-flow concept. Physics constants are embedded and inspectable; no server or model API is involved. The model, its assumptions, and its remaining limits are documented in the physics audit.</p>
+    <nav><a href="https://github.com/sdelaurentiis123/sodium-sim" rel="noreferrer">Source + tests</a><a href="https://github.com/sdelaurentiis123/sodium-sim/blob/main/sodium-lamp/PHYSICS_AUDIT.md" rel="noreferrer">Physics audit</a><a href="https://lightcellenergy.com/" rel="noreferrer">Lightcell</a><a href="https://patents.google.com/patent/US12136898B2/en" rel="noreferrer">Public geometry</a><a href="https://physics.nist.gov/PhysRefData/ASD/lines_form.html" rel="noreferrer">NIST atomic data</a></nav>
   </footer>
   <div id="fatal" hidden></div>
   <script type="module" src="./app.js"></script>

@@ -44,3 +44,4 @@ next-env.d.ts
 /.venv-modal/
 __pycache__/
 .pytest_cache/
+.gstack/
