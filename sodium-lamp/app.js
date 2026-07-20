@@ -481,5 +481,16 @@ async function main() {
   initialize();ui['gpu-status'].textContent=`WebGPU · ${NX}×${NZ} · coaxial burner + two walls + return · 6 radiation groups`;ui['gpu-status'].classList.add('ok');window.__lampControls={rebuild:initialize,step:stepPhysics,params,snapshot:()=>({runNumber,designPending,paused,physicalTimeS:params[P.TIME],simulationMode:params[P.STABILIZED]>.5?'stabilized':'transient',operatingProtocol:engagementState.mode,engagement:{...engagementState},fuelFlowSLPM:+ui['fuel-flow'].value,oxidizerFlowSLPM:+ui['oxidizer-flow'].value,powerKW:params[P.POWER],equivalenceRatio:params[P.PHI],oxygenFraction:params[P.O2],flowSpeedMS:params[P.SPEED],coflowSpeedMS:params[P.COFLOW],returnSpeedMS:params[P.RETURN],nozzleReynolds:nozzleState.reynolds,nozzleMach:nozzleState.mach,openAirFlameReferenceM:openAirReferenceM,coreRadiusM:params[P.RC],wallThicknessM:params[P.TW],nozzleDiameterM:params[P.NOZZLE],oxidizerNozzleDiameterM:params[P.OXNOZZLE],nozzleInsertionM:params[P.INSERTION]})};tick();
 }
 
-function fail(error){console.error(error);if(!ui.fatal.hidden)return;ui.fatal.hidden=false;ui.fatal.textContent=`Sodium Lamp could not start.\n\n${error.message||error}`;ui['gpu-status'].textContent='WebGPU failed';ui['gpu-status'].classList.add('error');}
+function fail(error){console.error(error);const message=String(error?.message||error);
+  if(/WebGPU is unavailable|No WebGPU adapter/.test(message)){
+    ui['gpu-status'].textContent='WebGPU not available here';ui['gpu-status'].classList.add('error');
+    if(ui['run-phase'])ui['run-phase'].hidden=true;
+    if(!document.querySelector('.gpu-fallback')){
+      const notice=document.createElement('div');notice.className='gpu-fallback';
+      notice.innerHTML='<strong>This browser can’t run the live model.</strong><span>The solver needs WebGPU: desktop Chrome or Edge, Safari 26+ on Mac/iPhone/iPad, or Chrome on a modern Android. On iPhone, every browser — including Chrome — uses the system WebKit engine, so it depends on your iOS version, not the app.</span><span>Everything else on this page — the physics story, the controls, and the model documentation — is still readable below.</span>';
+      document.querySelector('.viewport-3d')?.append(notice);
+    }
+    return;
+  }
+  if(!ui.fatal.hidden)return;ui.fatal.hidden=false;ui.fatal.textContent=`Sodium Lamp could not start.\n\n${message}`;ui['gpu-status'].textContent='WebGPU failed';ui['gpu-status'].classList.add('error');}
 readControls({commitDesign:true});main().catch(fail);

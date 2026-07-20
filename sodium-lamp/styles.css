@@ -114,6 +114,9 @@ main{padding:0 0 40px}
 .volume-scale.photon i{background:linear-gradient(90deg,#160600,#713006,#e98b0a,#ffe150,#fffbd0)}
 .volume-scale.reaction i{background:linear-gradient(90deg,#07112b,#315be8,#ffe45d,#fffbd1)}
 .volume-scale.camera i{background:linear-gradient(90deg,#080400,#5d1900,#ff7900,#ffe449,#fffdf0)}
+.gpu-fallback{position:absolute;z-index:6;inset:auto 13px 13px;top:46px;display:grid;gap:10px;align-content:center;padding:20px;background:#0a0d10ee;border:1px solid var(--line)}
+.gpu-fallback strong{font:600 17px/1.35 var(--serif);color:var(--yellow)}
+.gpu-fallback span{font:13px/1.6 var(--serif);color:var(--ink)}
 
 /* ---- non-LTE instrument ---- */
 .nonlte-instrument{min-height:540px;border:1px solid var(--line);background:var(--panel-deep);padding:14px;display:flex;flex-direction:column;gap:13px;overflow:hidden}
