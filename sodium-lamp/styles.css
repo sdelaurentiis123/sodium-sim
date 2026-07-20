@@ -338,5 +338,5 @@ footer nav{display:flex;gap:18px;flex-wrap:wrap;align-items:baseline}
   .construction-key{grid-template-columns:1fr}
   .construction-key span:nth-child(n+3){display:none}
   .run-phase{bottom:52px}
-  .volume-definition{display:none}
+  .volume-definition,.volume-scale{display:none}
 }
